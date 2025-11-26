@@ -1,27 +1,27 @@
 # Agent Plugins (Host-Side)
 
-Agent Plugins sind Scripts die **auf dem überwachten Host** laufen und zusätzliche Daten sammeln. Sie werden vom CheckMK Agent aufgerufen.
+Agent plugins are scripts that run **on the monitored host** and collect additional data. They are called by the CheckMK agent.
 
-## Unterschied zu Special Agents
+## Difference from Special Agents
 
-| Typ | Läuft auf | Verbindung | Anwendung |
-|-----|-----------|------------|-----------|
-| **Agent Plugin** | Überwachter Host | Lokal | Lokale Daten (Logs, Apps, Prozesse) |
-| **Special Agent** | CheckMK Server | Remote (API) | Externe Systeme (Cloud, Appliances) |
+| Type | Runs on | Connection | Use Case |
+|------|---------|------------|----------|
+| **Agent Plugin** | Monitored host | Local | Local data (logs, apps, processes) |
+| **Special Agent** | CheckMK server | Remote (API) | External systems (cloud, appliances) |
 
-## Verzeichnisse auf dem Host
+## Directories on the Host
 
 ```
-/usr/lib/check_mk_agent/plugins/           # Standard-Plugins
-/usr/lib/check_mk_agent/local/             # Local Checks
-/etc/check_mk/conf.d/                      # Konfiguration
+/usr/lib/check_mk_agent/plugins/           # Standard plugins
+/usr/lib/check_mk_agent/local/             # Local checks
+/etc/check_mk/conf.d/                      # Configuration
 
-# Mit Intervall (z.B. alle 5 Minuten)
-/usr/lib/check_mk_agent/plugins/300/       # 300 Sekunden = 5 Min
-/usr/lib/check_mk_agent/plugins/3600/      # 3600 Sekunden = 1 Stunde
+# With interval (e.g., every 5 minutes)
+/usr/lib/check_mk_agent/plugins/300/       # 300 seconds = 5 min
+/usr/lib/check_mk_agent/plugins/3600/      # 3600 seconds = 1 hour
 ```
 
-## Einfaches Agent Plugin (Bash)
+## Simple Agent Plugin (Bash)
 
 ```bash
 #!/bin/bash
@@ -29,22 +29,22 @@ Agent Plugins sind Scripts die **auf dem überwachten Host** laufen und zusätzl
 
 echo "<<<myapp>>>"
 
-# Prüfe ob Service läuft
+# Check if service is running
 if systemctl is-active --quiet myapp; then
     echo "status running"
 else
     echo "status stopped"
 fi
 
-# Sammle Metriken
+# Collect metrics
 if [ -f /var/log/myapp/metrics.log ]; then
     tail -1 /var/log/myapp/metrics.log
 fi
 ```
 
-## Agent Plugin (Python) - Offizieller Stil
+## Agent Plugin (Python) - Official Style
 
-Basierend auf offiziellen Plugins wie `mk_docker.py` und `mk_mongodb.py`:
+Based on official plugins like `mk_docker.py` and `mk_mongodb.py`:
 
 ```python
 #!/usr/bin/env python3
@@ -52,7 +52,7 @@ Basierend auf offiziellen Plugins wie `mk_docker.py` und `mk_mongodb.py`:
 
 INSTALLATION:
     Copy to /usr/lib/check_mk_agent/plugins/mk_myapp
-    
+
     For async execution (every 5 min):
     Copy to /usr/lib/check_mk_agent/plugins/300/mk_myapp
 
@@ -74,19 +74,19 @@ def read_config():
     """Read INI-style configuration."""
     config = {"enabled": True, "timeout": 30}
     config_file = MK_CONFDIR / "myapp.cfg"
-    
+
     if not config_file.exists():
         return config
-    
+
     parser = configparser.ConfigParser()
     parser.read(str(config_file))
-    
+
     if parser.has_section("MYAPP"):
         if parser.has_option("MYAPP", "enabled"):
             config["enabled"] = parser.getboolean("MYAPP", "enabled")
         if parser.has_option("MYAPP", "timeout"):
             config["timeout"] = parser.getint("MYAPP", "timeout")
-    
+
     return config
 
 
@@ -105,7 +105,7 @@ def collect_service_status():
 def collect_metrics():
     """Collect application metrics."""
     metrics = {"timestamp": int(time.time())}
-    
+
     # Read from status file
     status_file = Path("/var/lib/myapp/status.json")
     if status_file.exists():
@@ -114,25 +114,25 @@ def collect_metrics():
                 metrics.update(json.load(f))
         except Exception:
             pass
-    
+
     return metrics
 
 
 def main():
     config = read_config()
-    
+
     if not config.get("enabled"):
         return 0
-    
+
     # Section: Service Status (pipe-separated)
     print("<<<myapp_status:sep(124)>>>")
     status = collect_service_status()
     print(f"myapp|{status}")
-    
+
     # Section: Metrics (JSON)
     print("<<<myapp_metrics:sep(0)>>>")
     print(json.dumps(collect_metrics()))
-    
+
     return 0
 
 
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-## Konfigurationsdatei für Linux Plugins
+## Configuration File for Linux Plugins
 
 ```ini
 # /etc/check_mk/myapp.cfg
@@ -162,19 +162,19 @@ debug = false
 
 ## Windows Agent Plugin (PowerShell)
 
-### Verzeichnisse auf Windows
+### Directories on Windows
 
 ```
-C:\ProgramData\checkmk\agent\plugins\      # Agent Plugins
-C:\ProgramData\checkmk\agent\config\       # Konfigurationsdateien
-C:\ProgramData\checkmk\agent\local\        # Local Checks
-C:\ProgramData\checkmk\agent\spool\        # Spool-Dateien
+C:\ProgramData\checkmk\agent\plugins\      # Agent plugins
+C:\ProgramData\checkmk\agent\config\       # Configuration files
+C:\ProgramData\checkmk\agent\local\        # Local checks
+C:\ProgramData\checkmk\agent\spool\        # Spool files
 
-# Mit Intervall (z.B. alle 5 Minuten)
-C:\ProgramData\checkmk\agent\plugins\300\  # 300 Sekunden = 5 Min
+# With interval (e.g., every 5 minutes)
+C:\ProgramData\checkmk\agent\plugins\300\  # 300 seconds = 5 min
 ```
 
-### Einfaches PowerShell Plugin
+### Simple PowerShell Plugin
 
 ```powershell
 # C:\ProgramData\checkmk\agent\plugins\myapp.ps1
@@ -205,7 +205,7 @@ if (Test-Path $regPath) {
 }
 ```
 
-### PowerShell Plugin mit Konfigurationsdatei (MSSQL-Stil)
+### PowerShell Plugin with Configuration File (MSSQL-Style)
 
 ```powershell
 # C:\ProgramData\checkmk\agent\plugins\mydb.ps1
@@ -260,7 +260,7 @@ Write-Host "<<<mydb_status:sep(124)>>>"
 # ... database queries here
 ```
 
-### Konfigurationsdatei für Windows Plugin
+### Configuration File for Windows Plugin
 
 ```ini
 # C:\ProgramData\checkmk\agent\config\mydb.cfg
@@ -278,9 +278,9 @@ port = 1434
 database = master
 ```
 
-### Async Plugin für Windows (check_mk.user.yml)
+### Async Plugin for Windows (check_mk.user.yml)
 
-Für asynchrone Ausführung unter Windows muss die Agent-Konfiguration angepasst werden:
+For asynchronous execution on Windows, the agent configuration must be modified:
 
 ```yaml
 # C:\ProgramData\checkmk\agent\check_mk.user.yml
@@ -297,9 +297,9 @@ plugins:
       cache_age: 3600
 ```
 
-## Caching und Intervalle
+## Caching and Intervals
 
-Für ressourcenintensive Checks - Cache nutzen:
+For resource-intensive checks - use caching:
 
 ```python
 #!/usr/bin/env python3
@@ -317,18 +317,19 @@ import time
 CACHE_FILE = "/var/cache/check_mk/myexpensive.cache"
 CACHE_MAX_AGE = 900  # 15 minutes - slightly longer than interval
 
+
 def load_cache():
     """Load cached data if still valid."""
     if not os.path.exists(CACHE_FILE):
         return None
-    
+
     try:
         stat = os.stat(CACHE_FILE)
         age = time.time() - stat.st_mtime
-        
+
         if age > CACHE_MAX_AGE:
             return None
-        
+
         with open(CACHE_FILE) as f:
             return json.load(f)
     except Exception:
@@ -339,7 +340,7 @@ def save_cache(data):
     """Save data to cache."""
     cache_dir = os.path.dirname(CACHE_FILE)
     os.makedirs(cache_dir, exist_ok=True)
-    
+
     with open(CACHE_FILE, "w") as f:
         json.dump(data, f)
 
@@ -360,12 +361,12 @@ def collect_expensive_data():
 def main():
     # Try cache first
     data = load_cache()
-    
+
     if data is None:
         # Need to collect fresh data
         data = collect_expensive_data()
         save_cache(data)
-    
+
     # Output the data
     print("<<<myexpensive>>>")
     print(json.dumps(data))
@@ -377,13 +378,13 @@ if __name__ == "__main__":
 
 ## Async Agent Plugins (Linux)
 
-Async plugins laufen im Hintergrund:
+Async plugins run in the background:
 
 ```bash
 # /usr/lib/check_mk_agent/plugins/86400/myasync
 #!/bin/bash
 
-# Marker für async
+# Marker for async
 # MK_ASYNC=1
 
 echo "<<<myasync:cached($(date +%s),86400)>>>"
@@ -391,11 +392,11 @@ echo "<<<myasync:cached($(date +%s),86400)>>>"
 find /data -type f -size +100M 2>/dev/null | wc -l
 ```
 
-Das `cached(timestamp,max_age)` in der Section Header signalisiert dem Agent das Caching.
+The `cached(timestamp,max_age)` in the section header signals caching to the agent.
 
-## Konfigurierbare Plugins
+## Configurable Plugins
 
-Standard-Methode für konfigurierbare Plugins:
+Standard method for configurable plugins:
 
 ### Linux Config Format
 ```ini
@@ -416,9 +417,9 @@ threshold_warn = 80
 threshold_crit = 95
 ```
 
-## Verteilung via Agent Bakery (Enterprise)
+## Distribution via Agent Bakery (Enterprise)
 
-### Bakery Rule (Server-seitig)
+### Bakery Rule (Server-side)
 
 ```python
 # ~/local/lib/python3/cmk_addons/plugins/myplugin/rulesets/bakery.py
@@ -491,14 +492,14 @@ from cmk.base.cee.plugins.bakery.bakery_api.v1 import (
 
 def get_myapp_plugin_files(conf: dict[str, Any]) -> FileGenerator:
     """Generate plugin files for agent bakery."""
-    
+
     # Linux plugin
     yield Plugin(
         base_os=OS.LINUX,
         source=Path("myapp"),  # From agents/plugins/
         interval=300,  # Run every 5 minutes
     )
-    
+
     # Linux config file
     config_content = f"""
 enabled = {str(conf.get('enabled', True)).lower()}
@@ -511,7 +512,7 @@ threshold_warn = {conf.get('threshold', 80)}
         target=Path("myapp.cfg"),
         include_header=True,
     )
-    
+
     # Windows plugin
     yield Plugin(
         base_os=OS.WINDOWS,
@@ -525,7 +526,7 @@ register.bakery_plugin(
 )
 ```
 
-## Check Plugin für Agent-Daten
+## Check Plugin for Agent Data
 
 ```python
 # ~/local/lib/python3/cmk_addons/plugins/myplugin/agent_based/myapp.py
@@ -546,7 +547,7 @@ def parse_myapp(string_table):
     """Parse myapp agent output."""
     if not string_table:
         return None
-    
+
     # JSON format (sep(0))
     try:
         return json.loads(string_table[0][0])
@@ -565,9 +566,9 @@ def check_myapp(section):
     if not section:
         yield Result(state=State.UNKNOWN, summary="No data from agent")
         return
-    
+
     status = section.get("status", "unknown")
-    
+
     if status == "active" or status == "running":
         yield Result(state=State.OK, summary=f"Service is {status}")
     elif status == "inactive" or status == "stopped":
@@ -592,33 +593,33 @@ check_plugin_myapp = CheckPlugin(
 ## Debugging Agent Plugins
 
 ```bash
-# Auf dem überwachten Host:
+# On the monitored host:
 
-# Plugin manuell ausführen
+# Run plugin manually
 /usr/lib/check_mk_agent/plugins/myapp
 
-# Gesamte Agent-Ausgabe prüfen
+# Check entire agent output
 check_mk_agent
 
-# Nur bestimmte Section
+# Only specific section
 check_mk_agent | sed -n '/<<<myapp>>>/,/<<<[^>]*>>>/p'
 
-# Cache-Dateien prüfen
+# Check cache files
 ls -la /var/cache/check_mk/
 
-# Plugin-Berechtigungen
+# Plugin permissions
 ls -la /usr/lib/check_mk_agent/plugins/
 
-# Plugin-Fehler im Agent-Log
+# Plugin errors in agent log
 journalctl -u check-mk-agent
 ```
 
 ## Best Practices
 
-1. **Timeout**: Plugins sollten in < 60 Sekunden fertig sein
-2. **Fehlerbehandlung**: Keine Exceptions nach stdout
-3. **Exit Codes**: 0 = OK, auch bei Warnungen (Output zählt)
-4. **Caching**: Für teure Operationen Intervall-Ordner nutzen
-5. **Idempotenz**: Mehrfaches Ausführen = gleiches Ergebnis
-6. **Minimale Abhängigkeiten**: Nur Standard-Tools verwenden
-7. **Sichere Pfade**: Absolute Pfade für Executables
+1. **Timeout**: Plugins should finish in < 60 seconds
+2. **Error handling**: No exceptions to stdout
+3. **Exit codes**: 0 = OK, even for warnings (output counts)
+4. **Caching**: Use interval directories for expensive operations
+5. **Idempotence**: Multiple executions = same result
+6. **Minimal dependencies**: Use only standard tools
+7. **Safe paths**: Absolute paths for executables

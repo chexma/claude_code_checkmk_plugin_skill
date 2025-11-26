@@ -1,41 +1,41 @@
 # MKP Packaging Guide
 
-MKP (Monitoring Kit Package) ist das Standardformat für CheckMK-Erweiterungen.
+MKP (Monitoring Kit Package) is the standard format for CheckMK extensions.
 
-## Schnellstart
+## Quick Start
 
 ```bash
-# MKPs auflisten
+# List MKPs
 mkp list
 
-# Neues Paket erstellen
+# Create new package
 mkp template myplugin
 
-# Paket bauen
+# Build package
 mkp package myplugin
 
-# Paket installieren
+# Install package
 mkp install myplugin-1.0.0.mkp
 
-# Paket deinstallieren
+# Uninstall package
 mkp uninstall myplugin
 ```
 
-## Verzeichnisstruktur (CheckMK 2.4)
+## Directory Structure (CheckMK 2.4)
 
 ```
 ~/local/lib/python3/cmk_addons/plugins/<family>/
-├── __init__.py                    # Optional, kann leer sein
+├── __init__.py                    # Optional, can be empty
 ├── agent_based/
 │   ├── __init__.py
 │   └── mycheck.py
 ├── checkman/
-│   └── mycheck                    # Manual page (ohne Extension!)
+│   └── mycheck                    # Manual page (no extension!)
 ├── graphing/
 │   ├── __init__.py
 │   └── mymetrics.py
 ├── libexec/
-│   └── agent_myagent              # Special Agent (ohne Extension!)
+│   └── agent_myagent              # Special agent (no extension!)
 ├── rulesets/
 │   ├── __init__.py
 │   └── mycheck.py
@@ -46,7 +46,7 @@ mkp uninstall myplugin
 
 ## Package Manifest
 
-Die `package` Datei im MKP definiert Metadaten:
+The `package` file in the MKP defines metadata:
 
 ```python
 # ~/var/check_mk/packages/myplugin
@@ -70,84 +70,84 @@ Die `package` Datei im MKP definiert Metadaten:
 }
 ```
 
-## mkp CLI Befehle
+## mkp CLI Commands
 
 ```bash
-# Alle MKP-Befehle
+# All MKP commands
 mkp --help
 
-# Installierte Pakete anzeigen
+# Show installed packages
 mkp list
 
-# Paket-Details
+# Package details
 mkp show myplugin
 
-# Dateien eines Pakets anzeigen
+# Show files of a package
 mkp files myplugin
 
-# Vorlage erstellen (interaktiv)
+# Create template (interactive)
 mkp template myplugin
 
-# Paket erstellen aus Manifest
+# Create package from manifest
 mkp package myplugin
 
-# Paket installieren
+# Install package
 mkp install myplugin-1.0.0.mkp
 
-# Paket deinstallieren (Dateien bleiben in local/)
+# Uninstall package (files remain in local/)
 mkp uninstall myplugin
 
-# Paket und Dateien entfernen
+# Remove package and files
 mkp remove myplugin
 
-# Aktivierte vs. deaktivierte Pakete
+# Enabled vs. disabled packages
 mkp list --all
 
-# Paket deaktivieren (bleibt installiert)
+# Disable package (stays installed)
 mkp disable myplugin
 
-# Paket aktivieren
+# Enable package
 mkp enable myplugin
 ```
 
-## Dateigruppen in MKP
+## File Groups in MKP
 
-| Gruppe | Pfad | Beschreibung |
-|--------|------|--------------|
-| `cmk_addons_plugins` | `lib/python3/cmk_addons/plugins/<family>/` | Hauptplugin-Code |
-| `agent_based` | `share/check_mk/agents/plugins/` | Agent-Plugins (laufen auf Hosts) |
-| `agents` | `share/check_mk/agents/` | Agent-Dateien |
-| `checkman` | `share/check_mk/checkman/` | Manual Pages (legacy) |
+| Group | Path | Description |
+|-------|------|-------------|
+| `cmk_addons_plugins` | `lib/python3/cmk_addons/plugins/<family>/` | Main plugin code |
+| `agent_based` | `share/check_mk/agents/plugins/` | Agent plugins (run on hosts) |
+| `agents` | `share/check_mk/agents/` | Agent files |
+| `checkman` | `share/check_mk/checkman/` | Manual pages (legacy) |
 | `checks` | `share/check_mk/checks/` | Check API v1 (legacy) |
-| `doc` | `share/doc/check_mk/` | Dokumentation |
-| `lib` | `lib/` | Zusätzliche Libraries |
-| `notifications` | `share/check_mk/notifications/` | Notification Plugins |
-| `pnp-templates` | `share/check_mk/pnp-templates/` | PNP4Nagios Templates |
-| `web` | `share/check_mk/web/` | Web UI Erweiterungen |
+| `doc` | `share/doc/check_mk/` | Documentation |
+| `lib` | `lib/` | Additional libraries |
+| `notifications` | `share/check_mk/notifications/` | Notification plugins |
+| `pnp-templates` | `share/check_mk/pnp-templates/` | PNP4Nagios templates |
+| `web` | `share/check_mk/web/` | Web UI extensions |
 
-## Workflow: Plugin zu MKP
+## Workflow: Plugin to MKP
 
-### 1. Plugin entwickeln und testen
+### 1. Develop and Test Plugin
 
 ```bash
-# Entwicklung in local/
+# Development in local/
 cd ~/local/lib/python3/cmk_addons/plugins/
 
-# Plugin-Familie erstellen
+# Create plugin family
 mkdir -p myplugin/{agent_based,rulesets,graphing,checkman}
 
-# Code entwickeln und testen
+# Develop and test code
 cmk -vI --detect-plugins=mycheck testhost
 cmk -v --detect-plugins=mycheck testhost
 ```
 
-### 2. Manifest erstellen
+### 2. Create Manifest
 
 ```bash
-# Interaktiv
+# Interactive
 mkp template myplugin
 
-# Oder manuell
+# Or manually
 cat > ~/var/check_mk/packages/myplugin << 'EOF'
 {
     "name": "myplugin",
@@ -168,22 +168,22 @@ cat > ~/var/check_mk/packages/myplugin << 'EOF'
 EOF
 ```
 
-### 3. Paket bauen
+### 3. Build Package
 
 ```bash
 mkp package myplugin
-# Erzeugt: ~/var/check_mk/packages_local/myplugin-1.0.0.mkp
+# Creates: ~/var/check_mk/packages_local/myplugin-1.0.0.mkp
 ```
 
-### 4. Verteilen
+### 4. Distribute
 
-- Upload im Web: Setup > Extension Packages
-- Kopieren auf andere Server
-- Publish auf CheckMK Exchange
+- Upload in web: Setup > Extension Packages
+- Copy to other servers
+- Publish on CheckMK Exchange
 
 ## Checkman Pages (Manual)
 
-Erstelle Dokumentation für deine Checks:
+Create documentation for your checks:
 
 ```
 # ~/local/lib/python3/cmk_addons/plugins/myplugin/checkman/mycheck
@@ -194,7 +194,7 @@ license: GPLv2
 distribution: check_mk
 description:
  This check monitors something important.
- 
+
  It creates one service per item found and
  monitors the status.
 
@@ -207,18 +207,18 @@ discovery:
  One service is created for each item found.
 ```
 
-### Checkman Felder
+### Checkman Fields
 
-| Feld | Beschreibung |
-|------|--------------|
-| `title` | Kurzer Titel für die Integration |
-| `agents` | Unterstützte Agenten: linux, windows, snmp, etc. |
-| `catalog` | Kategorie für Sortierung (os/services, hw/network, etc.) |
-| `license` | Lizenz (GPLv2, MIT, etc.) |
-| `distribution` | Verteilungsart |
-| `description` | Ausführliche Beschreibung |
-| `item` | Was das Item repräsentiert |
-| `discovery` | Wie Discovery funktioniert |
+| Field | Description |
+|-------|-------------|
+| `title` | Short title for the integration |
+| `agents` | Supported agents: linux, windows, snmp, etc. |
+| `catalog` | Category for sorting (os/services, hw/network, etc.) |
+| `license` | License (GPLv2, MIT, etc.) |
+| `distribution` | Distribution type |
+| `description` | Detailed description |
+| `item` | What the item represents |
+| `discovery` | How discovery works |
 
 ## Versioning Best Practices
 
@@ -229,20 +229,20 @@ discovery:
 "version": "1.1.0"   # New feature
 "version": "2.0.0"   # Breaking change
 
-# CheckMK Versionskompatibilität
-"version.packaged": "2.4.0p16"    # Version womit gepackt wurde
-"version.min_required": "2.3.0"    # Mindestens erforderliche Version
+# CheckMK version compatibility
+"version.packaged": "2.4.0p16"    # Version used for packaging
+"version.min_required": "2.3.0"    # Minimum required version
 ```
 
-## Entwicklung mit Git
+## Development with Git
 
-Empfohlene Repository-Struktur:
+Recommended repository structure:
 
 ```
 myplugin/
 ├── .github/
 │   └── workflows/
-│       └── build.yml           # CI/CD für MKP-Build
+│       └── build.yml           # CI/CD for MKP build
 ├── local/
 │   └── lib/
 │       └── python3/
@@ -254,13 +254,13 @@ myplugin/
 │                       ├── graphing/
 │                       ├── rulesets/
 │                       └── server_side_calls/
-├── package                      # MKP Manifest
+├── package                      # MKP manifest
 ├── README.md
 ├── LICENSE
 └── Makefile
 ```
 
-### Makefile Beispiel
+### Makefile Example
 
 ```makefile
 NAME := myplugin
@@ -298,20 +298,20 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: checkmk/check-mk-raw:2.4.0-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Copy plugin files
         run: |
           cp -r local/lib/python3/cmk_addons/plugins/* \
             /omd/sites/cmk/local/lib/python3/cmk_addons/plugins/
           cp package /omd/sites/cmk/var/check_mk/packages/myplugin
-      
+
       - name: Build MKP
         run: |
           su - cmk -c "mkp package myplugin"
-      
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -321,53 +321,53 @@ jobs:
 
 ## Troubleshooting
 
-### Paket lässt sich nicht installieren
+### Package fails to install
 
 ```bash
-# Fehlerdetails anzeigen
+# Show error details
 mkp install myplugin-1.0.0.mkp --verbose
 
-# Versionskonflikt prüfen
+# Check version conflict
 cmk --version
 # vs.
 grep version.min_required package
 ```
 
-### Dateien werden nicht gefunden
+### Files not found
 
 ```bash
-# Prüfe Dateigruppen im Manifest
+# Check file groups in manifest
 mkp files myplugin
 
-# Prüfe tatsächliche Dateien
+# Check actual files
 ls -la ~/local/lib/python3/cmk_addons/plugins/myplugin/
 ```
 
-### Import-Fehler nach Installation
+### Import errors after installation
 
 ```bash
-# Python-Pfad prüfen
+# Check Python path
 python3 -c "import cmk.agent_based.v2; print('OK')"
 
-# Apache neu starten (für Web-Änderungen)
+# Restart Apache (for web changes)
 omd restart apache
 
-# Core neu laden (für Check-Änderungen)
+# Reload core (for check changes)
 cmk -R
 ```
 
-## Migration von Legacy-Paketen
+## Migration from Legacy Packages
 
-Alte Pakete (Check API v1) können parallel existieren, sollten aber migriert werden:
+Old packages (Check API v1) can exist in parallel but should be migrated:
 
 ```bash
-# Alte Dateien identifizieren
-ls ~/local/share/check_mk/checks/        # Alt (v1)
-ls ~/local/lib/python3/cmk_addons/plugins/  # Neu (v2)
+# Identify old files
+ls ~/local/share/check_mk/checks/        # Old (v1)
+ls ~/local/lib/python3/cmk_addons/plugins/  # New (v2)
 
-# Migration durchführen
-# 1. Check von v1 nach v2 API portieren
-# 2. Dateien in neue Struktur verschieben
-# 3. Altes Paket entfernen
+# Perform migration
+# 1. Port check from v1 to v2 API
+# 2. Move files to new structure
+# 3. Remove old package
 mkp remove oldplugin
 ```

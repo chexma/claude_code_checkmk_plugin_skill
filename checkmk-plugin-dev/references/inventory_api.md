@@ -1,8 +1,8 @@
 # Inventory Plugins (HW/SW Inventory)
 
-Inventory Plugins sammeln Hardware- und Software-Informationen für die CheckMK Inventory.
+Inventory plugins collect hardware and software information for CheckMK inventory.
 
-## Konzept
+## Concept
 
 ```
 Agent Output → Inventory Plugin → Inventory Tree
@@ -16,7 +16,7 @@ Agent Output → Inventory Plugin → Inventory Tree
                                       └── Applications
 ```
 
-## Inventory Plugin Struktur
+## Inventory Plugin Structure
 
 ```python
 #!/usr/bin/env python3
@@ -45,7 +45,7 @@ def inventory_myapp(section) -> InventoryResult:
     """Generate inventory data."""
     if not section:
         return
-    
+
     # 1. Attributes: Single values
     yield Attributes(
         path=["software", "applications", "myapp"],
@@ -55,7 +55,7 @@ def inventory_myapp(section) -> InventoryResult:
             "license_type": section.get("license"),
         },
     )
-    
+
     # 2. Table rows: Multiple items
     for module in section.get("modules", []):
         yield TableRow(
@@ -86,49 +86,49 @@ inventory_plugin_myapp = InventoryPlugin(
 ## Variable Naming
 
 ```python
-# WICHTIG: Prefix für Auto-Discovery
+# IMPORTANT: Prefix for auto-discovery
 inventory_plugin_<name> = InventoryPlugin(...)
 ```
 
-## Inventory Pfade (Inventory Tree)
+## Inventory Paths (Inventory Tree)
 
-Standard-Pfade die CheckMK kennt:
+Standard paths that CheckMK recognizes:
 
 ```
 hardware/
-├── cpu/                    # CPU Informationen
-├── memory/                 # RAM Details
+├── cpu/                    # CPU information
+├── memory/                 # RAM details
 ├── storage/
-│   ├── controller/         # Storage Controller
-│   └── disks/              # Festplatten
-├── system/                 # Systeminfo
+│   ├── controller/         # Storage controller
+│   └── disks/              # Hard drives
+├── system/                 # System info
 │   ├── bios/
 │   ├── motherboard/
 │   └── product/
-└── video/                  # Grafikkarten
+└── video/                  # Graphics cards
 
 networking/
-├── interfaces/             # Netzwerk-Interfaces
-├── routes/                 # Routing-Tabelle
-└── addresses/              # IP-Adressen
+├── interfaces/             # Network interfaces
+├── routes/                 # Routing table
+└── addresses/              # IP addresses
 
 software/
-├── os/                     # Betriebssystem
-├── packages/               # Installierte Pakete
-├── applications/           # Anwendungen
-│   └── <your_app>/         # Custom Apps hier
-├── configuration/          # Konfiguration
-└── firmware/               # Firmware-Versionen
+├── os/                     # Operating system
+├── packages/               # Installed packages
+├── applications/           # Applications
+│   └── <your_app>/         # Custom apps go here
+├── configuration/          # Configuration
+└── firmware/               # Firmware versions
 ```
 
 ## Attributes vs. TableRow
 
-| Typ | Anwendung | Beispiel |
-|-----|-----------|----------|
-| `Attributes` | Einzelne Key-Value Paare | Version, Install-Datum |
-| `TableRow` | Liste von Items | Installierte Module, Lizenzen |
+| Type | Use Case | Example |
+|------|----------|---------|
+| `Attributes` | Single key-value pairs | Version, install date |
+| `TableRow` | List of items | Installed modules, licenses |
 
-### Attributes Beispiel
+### Attributes Example
 
 ```python
 yield Attributes(
@@ -143,15 +143,15 @@ yield Attributes(
 )
 ```
 
-### TableRow Beispiel
+### TableRow Example
 
 ```python
-# Für mehrere ähnliche Items (z.B. Lizenzen, Module)
+# For multiple similar items (e.g., licenses, modules)
 for license in licenses:
     yield TableRow(
         path=["software", "applications", "myapp", "licenses"],
         key_columns={
-            "license_id": license["id"],  # Eindeutiger Schlüssel
+            "license_id": license["id"],  # Unique key
         },
         inventory_columns={
             "type": license["type"],
@@ -161,9 +161,9 @@ for license in licenses:
     )
 ```
 
-## Status Columns (Änderungserkennung)
+## Status Columns (Change Detection)
 
-`status_columns` werden für die Änderungserkennung verwendet:
+`status_columns` are used for change detection:
 
 ```python
 yield TableRow(
@@ -176,16 +176,16 @@ yield TableRow(
         "package_type": "rpm",
     },
     status_columns={
-        "version": package["version"],  # Änderungen werden getrackt
+        "version": package["version"],  # Changes are tracked
     },
 )
 ```
 
-- `key_columns`: Identifizieren das Item eindeutig
-- `inventory_columns`: Statische Daten
-- `status_columns`: Werden auf Änderungen überwacht
+- `key_columns`: Uniquely identify the item
+- `inventory_columns`: Static data
+- `status_columns`: Monitored for changes
 
-## Agent Output für Inventory
+## Agent Output for Inventory
 
 ```python
 #!/usr/bin/env python3
@@ -195,13 +195,13 @@ import json
 import os
 
 def main():
-    # Normal section für Check
+    # Normal section for check
     print("<<<myapp>>>")
     print("status|running")
-    
-    # Separate section für Inventory
+
+    # Separate section for inventory
     print("<<<myapp_inventory:sep(0)>>>")
-    
+
     inventory_data = {
         "version": "2.4.1",
         "installed": "2024-01-15",
@@ -212,14 +212,14 @@ def main():
             {"name": "reporting", "version": "1.0.5", "enabled": False},
         ]
     }
-    
+
     print(json.dumps(inventory_data))
 
 if __name__ == "__main__":
     main()
 ```
 
-## Komplexes Inventory Plugin
+## Complex Inventory Plugin
 
 ```python
 #!/usr/bin/env python3
@@ -242,7 +242,7 @@ def parse_mydevice(string_table) -> Section | None:
     """Parse JSON inventory data."""
     if not string_table:
         return None
-    
+
     import json
     try:
         return json.loads(" ".join(string_table[0]))
@@ -254,7 +254,7 @@ def inventory_mydevice(section: Section | None) -> InventoryResult:
     """Generate comprehensive inventory."""
     if not section:
         return
-    
+
     # Hardware: System Info
     if "system" in section:
         sys = section["system"]
@@ -267,7 +267,7 @@ def inventory_mydevice(section: Section | None) -> InventoryResult:
                 "uuid": sys.get("uuid"),
             },
         )
-    
+
     # Hardware: CPU
     if "cpu" in section:
         cpu = section["cpu"]
@@ -280,7 +280,7 @@ def inventory_mydevice(section: Section | None) -> InventoryResult:
                 "frequency": cpu.get("frequency"),
             },
         )
-    
+
     # Hardware: Storage (Table)
     for disk in section.get("disks", []):
         yield TableRow(
@@ -299,7 +299,7 @@ def inventory_mydevice(section: Section | None) -> InventoryResult:
                 "health": disk.get("health"),
             },
         )
-    
+
     # Software: Application
     if "application" in section:
         app = section["application"]
@@ -312,7 +312,7 @@ def inventory_mydevice(section: Section | None) -> InventoryResult:
                 "license": app.get("license_type"),
             },
         )
-    
+
     # Networking: Interfaces
     for iface in section.get("interfaces", []):
         yield TableRow(
@@ -344,53 +344,53 @@ inventory_plugin_mydevice = InventoryPlugin(
 )
 ```
 
-## Inventory ausführen und testen
+## Running and Testing Inventory
 
 ```bash
-# Inventory für Host ausführen
+# Run inventory for host
 cmk -v --inventory-as-check myhost
 
-# Nur Inventory (kein Check)
+# Inventory only (no check)
 cmk -v -i myhost
 
-# Inventory Debug
+# Inventory debug
 cmk --debug -v -i myhost
 
-# Inventory-Daten anzeigen
+# Show inventory data
 cmk --paths | grep inventory
 cat ~/var/check_mk/inventory/myhost
 
-# Inventory Tree im Web
+# Inventory tree in web UI
 # Setup > Hosts > <host> > Inventory
 ```
 
 ## Inventory History
 
-CheckMK speichert Inventory-Änderungen:
+CheckMK stores inventory changes:
 
 ```bash
-# History-Dateien
+# History files
 ls ~/var/check_mk/inventory_archive/myhost/
 
-# Änderungen zwischen zwei Zeitpunkten
+# Changes between two points in time
 cmk --inventory-diff myhost
 ```
 
-## Inventory als Service
+## Inventory as Service
 
-Inventory kann als regelmäßiger Check laufen:
+Inventory can run as a regular check:
 
 **Setup > Services > Service discovery > Hardware/Software inventory**
 
-Optionen:
-- Check-Intervall
-- Status bei Änderungen (WARN, CRIT)
-- Inventory-Tiefe
+Options:
+- Check interval
+- Status on changes (WARN, CRIT)
+- Inventory depth
 
 ## Best Practices
 
-1. **Eindeutige Keys**: `key_columns` müssen Items eindeutig identifizieren
-2. **Konsistente Pfade**: Standard-Pfade nutzen wo möglich
-3. **Sinnvolle Status-Columns**: Nur tracken was wichtig ist
-4. **Performance**: Inventory läuft seltener als Checks
-5. **Dokumentation**: Inventory-Pfade dokumentieren
+1. **Unique keys**: `key_columns` must uniquely identify items
+2. **Consistent paths**: Use standard paths where possible
+3. **Meaningful status columns**: Only track what's important
+4. **Performance**: Inventory runs less frequently than checks
+5. **Documentation**: Document inventory paths

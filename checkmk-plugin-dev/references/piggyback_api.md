@@ -1,12 +1,12 @@
 # Piggyback Data Mechanism
 
-Piggyback ermöglicht es einem Special Agent, Daten für **andere Hosts** bereitzustellen - z.B. VMs, Container, Cloud-Ressourcen.
+Piggyback allows a special agent to provide data for **other hosts** - e.g., VMs, containers, cloud resources.
 
-## Konzept
+## Concept
 
 ```
 ┌─────────────────────┐     ┌──────────────┐
-│  Nutanix Prism API  │ --> │  agent_prism │ --> Cluster-Daten
+│  Nutanix Prism API  │ --> │  agent_prism │ --> Cluster Data
 │                     │     │              │ --> Piggyback: VM1
 │                     │     │              │ --> Piggyback: VM2
 │                     │     │              │ --> Piggyback: Host1
@@ -27,34 +27,34 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--hostname", required=True)
     args = parser.parse_args()
-    
+
     # Fetch data from API
     data = fetch_cloud_api(args.hostname)
-    
+
     # 1. Main host data (the cloud controller itself)
     print("<<<mycloud_controller>>>")
     print(f"status|{data['controller_status']}")
     print(f"version|{data['version']}")
-    
+
     # 2. Piggyback data for each VM
     for vm in data.get("vms", []):
         # Switch to piggyback host context
         print(f"<<<<{vm['name']}>>>>")
-        
+
         # Now output sections for THIS piggyback host
         print("<<<mycloud_vm>>>")
         print(f"state|{vm['state']}")
         print(f"cpu|{vm['cpu_usage']}")
         print(f"memory|{vm['memory_usage']}")
-        
+
         # Can have multiple sections per piggyback host
         print("<<<mycloud_vm_disks>>>")
         for disk in vm.get("disks", []):
             print(f"{disk['name']}|{disk['size']}|{disk['used']}")
-        
+
         # End piggyback block - return to main host
         print("<<<<>>>>")
-    
+
     # 3. Can continue with more main host data
     print("<<<mycloud_summary>>>")
     print(f"total_vms|{len(data.get('vms', []))}")
@@ -69,13 +69,13 @@ if __name__ == "__main__":
 
 ## Piggyback Marker Syntax
 
-| Marker | Bedeutung |
-|--------|-----------|
-| `<<<<hostname>>>>` | Start piggyback block für hostname |
-| `<<<<>>>>` | Ende piggyback block, zurück zum Main-Host |
-| `<<<section_name>>>` | Normale Section innerhalb eines Blocks |
+| Marker | Meaning |
+|--------|---------|
+| `<<<<hostname>>>>` | Start piggyback block for hostname |
+| `<<<<>>>>` | End piggyback block, return to main host |
+| `<<<section_name>>>` | Normal section within a block |
 
-## Check Plugin für Piggyback-Daten
+## Check Plugin for Piggyback Data
 
 ```python
 #!/usr/bin/env python3
@@ -121,25 +121,25 @@ def check_mycloud_vm(section):
     if not section:
         yield Result(state=State.UNKNOWN, summary="No data")
         return
-    
+
     state_str = section.get("state", "unknown")
-    
+
     state_map = {
         "running": State.OK,
         "stopped": State.WARN,
         "error": State.CRIT,
     }
-    
+
     yield Result(
         state=state_map.get(state_str, State.UNKNOWN),
         summary=f"VM State: {state_str}"
     )
-    
+
     # Metrics
     if "cpu" in section:
         cpu = float(section["cpu"])
         yield Metric("cpu_usage", cpu, boundaries=(0.0, 100.0))
-    
+
     if "memory" in section:
         mem = float(section["memory"])
         yield Metric("memory_usage", mem, boundaries=(0.0, 100.0))
@@ -159,16 +159,16 @@ check_plugin_mycloud_vm = CheckPlugin(
 )
 ```
 
-## Piggyback Host Erstellung
+## Piggyback Host Creation
 
-Piggyback-Hosts müssen in CheckMK existieren! Optionen:
+Piggyback hosts must exist in CheckMK! Options:
 
-### 1. Manuelle Erstellung
-- Hosts manuell anlegen
-- Piggyback-Namen müssen exakt übereinstimmen
+### 1. Manual Creation
+- Create hosts manually
+- Piggyback names must match exactly
 
-### 2. Automatische Erstellung via DCD (Enterprise)
-Dynamic Configuration Daemon kann Hosts automatisch erstellen.
+### 2. Automatic Creation via DCD (Enterprise)
+Dynamic Configuration Daemon can create hosts automatically.
 
 ### 3. Via API / Script
 ```python
@@ -194,35 +194,35 @@ def create_host(hostname, folder="/piggyback"):
     return response.json()
 ```
 
-## Host Konfiguration für Piggyback
+## Host Configuration for Piggyback
 
-Piggyback-Hosts benötigen spezielle Konfiguration:
+Piggyback hosts require special configuration:
 
 1. **Tag `Agent type`**: "No API integrations, no Checkmk agent"
-2. **Piggyback aktivieren**: Setup > Hosts > Properties > "Use piggyback data from other hosts"
+2. **Enable piggyback**: Setup > Hosts > Properties > "Use piggyback data from other hosts"
 
-Oder via Regel: **Setup > Agents > General Settings > Piggyback**
+Or via rule: **Setup > Agents > General Settings > Piggyback**
 
 ```
 Use piggyback data from other hosts:
 ☑ Use piggyback data from other hosts if present
 ```
 
-## Piggyback mit Namens-Mapping
+## Piggyback with Name Mapping
 
-Wenn API-Namen nicht direkt als Hostnamen nutzbar sind:
+When API names are not directly usable as hostnames:
 
 ### Via Translation Rule
 **Setup > Agents > Agent access rules > Hostname translation for piggybacked hosts**
 
 ```python
-# Regex-basierte Übersetzung
+# Regex-based translation
 # API Name: "vm-123-web-server"
 # CMK Name: "web-server"
 ("vm-[0-9]+-(.+)", "\1")
 ```
 
-### Im Special Agent
+### In Special Agent
 ```python
 def sanitize_hostname(name):
     """Convert API name to valid hostname."""
@@ -239,17 +239,17 @@ print(f"<<<<{sanitize_hostname(vm['name'])}>>>>")
 
 ## Prism-Style Multi-Section Piggyback
 
-Das Nutanix Prism Plugin demonstriert komplexe Piggyback-Nutzung:
+The Nutanix Prism plugin demonstrates complex piggyback usage:
 
 ```python
-# Vereinfachte Struktur wie in agent_prism
+# Simplified structure like agent_prism
 
 def output_cluster_data(cluster):
     """Main cluster data - no piggyback."""
     print("<<<prism_info:sep(59)>>>")  # sep(59) = semicolon
     print(f"name;{cluster['name']}")
     print(f"version;{cluster['version']}")
-    
+
     print("<<<prism_alerts:sep(0)>>>")
     for alert in cluster.get("alerts", []):
         print(json.dumps(alert))
@@ -258,42 +258,42 @@ def output_cluster_data(cluster):
 def output_vm_piggyback(vm):
     """Piggyback data for a single VM."""
     print(f"<<<<{vm['name']}>>>>")
-    
+
     print("<<<prism_vms:sep(59)>>>")
     print(f"uuid;{vm['uuid']}")
     print(f"state;{vm['powerState']}")
     print(f"cpu;{vm['numVCpus']}")
     print(f"memory;{vm['memoryMb']}")
-    
+
     print("<<<prism_vm_tools>>>")
     print(f"installed;{vm.get('nutanixGuestTools', {}).get('enabled', False)}")
-    
+
     print("<<<<>>>>")
 
 
 def output_host_piggyback(host):
     """Piggyback data for a hypervisor host."""
     print(f"<<<<{host['name']}>>>>")
-    
+
     print("<<<prism_hosts:sep(59)>>>")
     print(f"uuid;{host['uuid']}")
     print(f"state;{host['state']}")
-    
+
     print("<<<prism_host_stats>>>")
     for stat_name, stat_value in host.get("stats", {}).items():
         print(f"{stat_name}={stat_value}")
-    
+
     print("<<<<>>>>")
 
 
 def main():
     data = fetch_prism_api()
-    
+
     output_cluster_data(data["cluster"])
-    
+
     for vm in data.get("vms", []):
         output_vm_piggyback(vm)
-    
+
     for host in data.get("hosts", []):
         output_host_piggyback(host)
 ```
@@ -301,23 +301,23 @@ def main():
 ## Debugging Piggyback
 
 ```bash
-# Piggyback-Dateien prüfen
+# Check piggyback files
 ls -la ~/tmp/check_mk/piggyback/
 
-# Inhalt einer Piggyback-Datei
+# Content of a piggyback file
 cat ~/tmp/check_mk/piggyback/<target-host>/<source-host>
 
-# Piggyback-Quellen für einen Host
+# Piggyback sources for a host
 cmk --list-piggyback-sources <hostname>
 
-# Agent-Output mit Piggyback prüfen
+# Check agent output with piggyback
 cmk -d <source-host> | grep -A5 "<<<<"
 ```
 
 ## Best Practices
 
-1. **Konsistente Namen**: Piggyback-Namen müssen exakt mit Hostnamen übereinstimmen
-2. **Eindeutige Namen**: Keine Duplikate über verschiedene Quellen
-3. **Fehlerbehandlung**: Was passiert wenn VM nicht mehr existiert?
-4. **Performance**: Bei vielen VMs kann die Datenmenge groß werden
-5. **Staleness**: Konfiguriere angemessene Piggyback-Timeouts
+1. **Consistent names**: Piggyback names must match host names exactly
+2. **Unique names**: No duplicates across different sources
+3. **Error handling**: What happens when VM no longer exists?
+4. **Performance**: With many VMs, data volume can be large
+5. **Staleness**: Configure appropriate piggyback timeouts

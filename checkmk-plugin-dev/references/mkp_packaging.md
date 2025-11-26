@@ -5,20 +5,69 @@ MKP (Monitoring Kit Package) is the standard format for CheckMK extensions.
 ## Quick Start
 
 ```bash
-# List MKPs
+# List all packages
 mkp list
 
-# Create new package
+# Find unpackaged local files
+mkp find
+
+# Create manifest template for new package
 mkp template myplugin
 
-# Build package
-mkp package myplugin
+# Build .mkp from manifest
+mkp package ~/var/check_mk/packages/myplugin
 
-# Install package
-mkp install myplugin-1.0.0.mkp
+# Add external .mkp to site
+mkp add myplugin-1.0.0.mkp
 
-# Uninstall package
-mkp uninstall myplugin
+# Enable specific version
+mkp enable myplugin 1.0.0
+```
+
+## Key File Locations
+
+| Path | Purpose |
+|------|---------|
+| `~/var/check_mk/packages/<name>` | Active manifest for installed package |
+| `~/var/check_mk/packages_local/<name>-<ver>.mkp` | Built .mkp files |
+| `~/tmp/check_mk/<name>.manifest.temp` | Template output (new packages only) |
+| `~/local/lib/python3/cmk_addons/plugins/<name>/` | Plugin source files |
+
+## MKP CLI Commands
+
+```bash
+# List all packages (shows active version)
+mkp list
+
+# List all versions including inactive
+mkp list --all
+
+# Show files in a specific package version
+mkp files <name> <version>
+
+# Find unpackaged local files
+mkp find
+
+# Create manifest template (for NEW packages)
+mkp template <name>
+
+# Build .mkp from manifest path
+mkp package <manifest_path>
+
+# Add external .mkp file to site
+mkp add <file.mkp>
+
+# Enable specific version (makes it active)
+mkp enable <name> <version>
+
+# Disable package
+mkp disable <name>
+
+# Remove package AND delete files
+mkp remove <name> <version>
+
+# Remove package but KEEP files as unpackaged
+mkp release <name>
 ```
 
 ## Directory Structure (CheckMK 2.4)
@@ -44,142 +93,131 @@ mkp uninstall myplugin
     └── special_agent.py
 ```
 
-## Package Manifest
+## Package Manifest Format
 
-The `package` file in the MKP defines metadata:
+**IMPORTANT:** The manifest is a **Python literal**, not JSON! Use `None` not `null`.
 
 ```python
 # ~/var/check_mk/packages/myplugin
-{
-    "name": "myplugin",
-    "title": "My Awesome Plugin",
-    "description": "Monitors awesome things.",
-    "version": "1.0.0",
-    "version.packaged": "2.4.0p16",
-    "version.min_required": "2.3.0",
-    "author": "Your Name",
-    "download_url": "https://github.com/you/myplugin",
-    "files": {
-        "cmk_addons_plugins": [
-            "myplugin/agent_based/mycheck.py",
-            "myplugin/rulesets/mycheck.py",
-            "myplugin/graphing/mymetrics.py",
-            "myplugin/checkman/mycheck",
-        ],
-    }
-}
+{'author': 'Your Name',
+ 'description': 'Package description.\n\nMulti-line supported.',
+ 'download_url': 'https://github.com/you/myplugin',
+ 'files': {'cmk_addons_plugins': ['myplugin/agent_based/mycheck.py',
+                                   'myplugin/libexec/agent_myplugin',
+                                   'myplugin/rulesets/special_agent.py',
+                                   'myplugin/server_side_calls/special_agent.py',
+                                   'myplugin/graphing/metrics.py']},
+ 'name': 'myplugin',
+ 'title': 'My Plugin Title',
+ 'version': '1.0.0',
+ 'version.min_required': '2.4.0p1',
+ 'version.packaged': '2.4.0p14',
+ 'version.usable_until': None}
 ```
 
-## mkp CLI Commands
+## File Categories in Manifest
+
+| Key | Local Path |
+|-----|------------|
+| `cmk_addons_plugins` | `local/lib/python3/cmk_addons/plugins/<name>/` |
+| `lib` | `local/lib/` |
+| `agents` | `local/share/check_mk/agents/` |
+| `web` | `local/share/check_mk/web/` |
+| `checkman` | `local/share/check_mk/checkman/` |
+
+## Workflows
+
+### New Package
 
 ```bash
-# All MKP commands
-mkp --help
+# 1. Create manifest template (finds all unpackaged files)
+mkp template mypackage
 
-# Show installed packages
-mkp list
+# 2. Edit template - IMPORTANT: remove unwanted files, set metadata
+vi ~/tmp/check_mk/mypackage.manifest.temp
 
-# Package details
-mkp show myplugin
+# 3. Build .mkp from template
+mkp package ~/tmp/check_mk/mypackage.manifest.temp
 
-# Show files of a package
-mkp files myplugin
+# 4. Add the built package to site
+mkp add ~/var/check_mk/packages_local/mypackage-1.0.0.mkp
 
-# Create template (interactive)
-mkp template myplugin
-
-# Create package from manifest
-mkp package myplugin
-
-# Install package
-mkp install myplugin-1.0.0.mkp
-
-# Uninstall package (files remain in local/)
-mkp uninstall myplugin
-
-# Remove package and files
-mkp remove myplugin
-
-# Enabled vs. disabled packages
-mkp list --all
-
-# Disable package (stays installed)
-mkp disable myplugin
-
-# Enable package
-mkp enable myplugin
+# 5. Enable the package
+mkp enable mypackage 1.0.0
 ```
 
-## File Groups in MKP
-
-| Group | Path | Description |
-|-------|------|-------------|
-| `cmk_addons_plugins` | `lib/python3/cmk_addons/plugins/<family>/` | Main plugin code |
-| `agent_based` | `share/check_mk/agents/plugins/` | Agent plugins (run on hosts) |
-| `agents` | `share/check_mk/agents/` | Agent files |
-| `checkman` | `share/check_mk/checkman/` | Manual pages (legacy) |
-| `checks` | `share/check_mk/checks/` | Check API v1 (legacy) |
-| `doc` | `share/doc/check_mk/` | Documentation |
-| `lib` | `lib/` | Additional libraries |
-| `notifications` | `share/check_mk/notifications/` | Notification plugins |
-| `pnp-templates` | `share/check_mk/pnp-templates/` | PNP4Nagios templates |
-| `web` | `share/check_mk/web/` | Web UI extensions |
-
-## Workflow: Plugin to MKP
-
-### 1. Develop and Test Plugin
+### Update Existing Package (simpler)
 
 ```bash
-# Development in local/
-cd ~/local/lib/python3/cmk_addons/plugins/
+# 1. Make code changes to files in:
+#    ~/local/lib/python3/cmk_addons/plugins/myplugin/
 
-# Create plugin family
-mkdir -p myplugin/{agent_based,rulesets,graphing,checkman}
+# 2. Edit manifest: bump version, add any new files
+vi ~/var/check_mk/packages/myplugin
 
-# Develop and test code
-cmk -vI --detect-plugins=mycheck testhost
-cmk -v --detect-plugins=mycheck testhost
+# 3. Package (auto-activates new version)
+mkp package ~/var/check_mk/packages/myplugin
+
+# 4. Copy .mkp for distribution
+cp ~/var/check_mk/packages_local/myplugin-X.Y.Z.mkp /path/to/distribute/
 ```
 
-### 2. Create Manifest
+## Version Management
+
+Multiple versions can coexist:
+
+```
+$ mkp list
+myplugin  1.0.2  Enabled (active on this site)
+myplugin  1.0.1  Enabled (inactive on this site)
+myplugin  1.0.0  Enabled (inactive on this site)
+```
+
+Only one version is "active" - the one whose files are deployed. Use `mkp enable <name> <version>` to switch.
+
+## Common Pitfalls
+
+### 1. `mkp template` includes too many files
+
+`mkp template` finds ALL unpackaged files including pip packages and other unrelated files. **Always edit the manifest** to include only your plugin files.
 
 ```bash
-# Interactive
-mkp template myplugin
-
-# Or manually
-cat > ~/var/check_mk/packages/myplugin << 'EOF'
-{
-    "name": "myplugin",
-    "title": "My Plugin",
-    "description": "Description here",
-    "version": "1.0.0",
-    "version.packaged": "2.4.0p16",
-    "version.min_required": "2.3.0",
-    "author": "Your Name",
-    "download_url": "",
-    "files": {
-        "cmk_addons_plugins": [
-            "myplugin/agent_based/mycheck.py",
-            "myplugin/rulesets/mycheck.py"
-        ]
-    }
-}
-EOF
+# After running mkp template, edit the manifest:
+vi ~/tmp/check_mk/mypackage.manifest.temp
+# Remove unwanted files from the 'files' section
 ```
 
-### 3. Build Package
+### 2. `mkp remove` deletes files!
+
+Use `mkp release` if you want to keep files as unpackaged:
 
 ```bash
-mkp package myplugin
-# Creates: ~/var/check_mk/packages_local/myplugin-1.0.0.mkp
+# DELETES files from local/
+mkp remove myplugin 1.0.0
+
+# Keeps files, just removes package registration
+mkp release myplugin
 ```
 
-### 4. Distribute
+### 3. Manual tar doesn't work
 
-- Upload in web: Setup > Extension Packages
-- Copy to other servers
-- Publish on CheckMK Exchange
+Don't manually create .mkp files with tar. Use `mkp package` which handles the correct format (gzipped tar with Python literal manifest).
+
+### 4. Version already exists
+
+Can't `mkp add` if same version already exists. Either remove first or increment version:
+
+```bash
+# Option 1: Remove existing version first
+mkp remove myplugin 1.0.0
+mkp add myplugin-1.0.0.mkp
+
+# Option 2: Increment version in manifest before building
+```
+
+### 5. Editing existing manifest auto-activates
+
+When you `mkp package` an existing package's manifest (in `~/var/check_mk/packages/`), the new version becomes active automatically.
 
 ## Checkman Pages (Manual)
 
@@ -224,14 +262,15 @@ discovery:
 
 ```python
 # Semantic Versioning: MAJOR.MINOR.PATCH
-"version": "1.0.0"   # Initial release
-"version": "1.0.1"   # Bug fix
-"version": "1.1.0"   # New feature
-"version": "2.0.0"   # Breaking change
+'version': '1.0.0'   # Initial release
+'version': '1.0.1'   # Bug fix
+'version': '1.1.0'   # New feature
+'version': '2.0.0'   # Breaking change
 
 # CheckMK version compatibility
-"version.packaged": "2.4.0p16"    # Version used for packaging
-"version.min_required": "2.3.0"    # Minimum required version
+'version.packaged': '2.4.0p16'     # Version used for packaging
+'version.min_required': '2.4.0p1'  # Minimum required version
+'version.usable_until': None       # Use None, not null (Python literal!)
 ```
 
 ## Development with Git
@@ -252,6 +291,7 @@ myplugin/
 │                       ├── agent_based/
 │                       ├── checkman/
 │                       ├── graphing/
+│                       ├── libexec/
 │                       ├── rulesets/
 │                       └── server_side_calls/
 ├── package                      # MKP manifest
@@ -264,16 +304,17 @@ myplugin/
 
 ```makefile
 NAME := myplugin
-VERSION := $(shell grep '"version":' package | cut -d'"' -f4)
+VERSION := $(shell grep "'version':" package | cut -d"'" -f4)
 
 .PHONY: build clean install
 
 build:
-	mkp package $(NAME)
+	mkp package package
 	mv ~/var/check_mk/packages_local/$(NAME)-$(VERSION).mkp .
 
 install:
-	mkp install $(NAME)-$(VERSION).mkp
+	mkp add $(NAME)-$(VERSION).mkp
+	mkp enable $(NAME) $(VERSION)
 
 clean:
 	rm -f $(NAME)-*.mkp
@@ -310,7 +351,7 @@ jobs:
 
       - name: Build MKP
         run: |
-          su - cmk -c "mkp package myplugin"
+          su - cmk -c "mkp package /omd/sites/cmk/var/check_mk/packages/myplugin"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -324,22 +365,23 @@ jobs:
 ### Package fails to install
 
 ```bash
-# Show error details
-mkp install myplugin-1.0.0.mkp --verbose
+# Check version conflict - same version may already exist
+mkp list --all
 
-# Check version conflict
-cmk --version
-# vs.
-grep version.min_required package
+# Remove existing version first if needed
+mkp remove myplugin 1.0.0
+
+# Then add
+mkp add myplugin-1.0.0.mkp
 ```
 
 ### Files not found
 
 ```bash
 # Check file groups in manifest
-mkp files myplugin
+mkp files myplugin 1.0.0
 
-# Check actual files
+# Check actual files exist
 ls -la ~/local/lib/python3/cmk_addons/plugins/myplugin/
 ```
 
@@ -349,11 +391,21 @@ ls -la ~/local/lib/python3/cmk_addons/plugins/myplugin/
 # Check Python path
 python3 -c "import cmk.agent_based.v2; print('OK')"
 
-# Restart Apache (for web changes)
+# Restart Apache (for web/ruleset changes)
 omd restart apache
 
 # Reload core (for check changes)
 cmk -R
+```
+
+### Rule not visible after installation
+
+```bash
+# Check for syntax errors in ruleset
+tail -f ~/var/log/web.log
+
+# Restart Apache
+omd restart apache
 ```
 
 ## Migration from Legacy Packages
@@ -368,6 +420,9 @@ ls ~/local/lib/python3/cmk_addons/plugins/  # New (v2)
 # Perform migration
 # 1. Port check from v1 to v2 API
 # 2. Move files to new structure
-# 3. Remove old package
-mkp remove oldplugin
+# 3. Release old package (keeps files for reference)
+mkp release oldplugin
+
+# 4. Or remove completely
+mkp remove oldplugin 1.0.0
 ```

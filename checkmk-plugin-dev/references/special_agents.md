@@ -349,6 +349,115 @@ except ImportError:
     pass
 ```
 
+## SSL Verification Gotchas
+
+### session.verify = False Doesn't Work Reliably!
+
+**GOTCHA:** Setting `verify` on a `requests.Session` object doesn't reliably disable SSL verification. You must pass `verify=` explicitly to each request!
+
+```python
+# WRONG - may still fail with SSL certificate errors!
+session = requests.Session()
+session.verify = False
+session.get(url)  # Can still verify SSL!
+
+# CORRECT - pass verify explicitly to each request
+session.get(url, verify=False)
+session.post(url, data, verify=False)
+```
+
+### Suppress urllib3 Warnings
+
+When disabling SSL verification, suppress the noisy warnings:
+
+```python
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+```
+
+### Complete SSL Pattern for Special Agents
+
+```python
+#!/usr/bin/env python3
+import argparse
+import json
+import sys
+import requests
+
+try:
+    import urllib3
+except ImportError:
+    urllib3 = None
+
+
+class APIClient:
+    def __init__(self, hostname, port, verify_ssl=True, timeout=30):
+        self.base_url = f"https://{hostname}:{port}"
+        self.verify_ssl = verify_ssl
+        self.timeout = timeout
+        self.session = requests.Session()
+
+        # Suppress warnings when SSL verification is disabled
+        if not verify_ssl and urllib3:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    def get(self, endpoint):
+        url = f"{self.base_url}{endpoint}"
+        # Always pass verify= explicitly!
+        return self.session.get(url, verify=self.verify_ssl, timeout=self.timeout)
+
+    def post(self, endpoint, data):
+        url = f"{self.base_url}{endpoint}"
+        return self.session.post(url, json=data, verify=self.verify_ssl, timeout=self.timeout)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--hostname", required=True)
+    parser.add_argument("--port", type=int, default=443)
+    parser.add_argument("--no-verify-ssl", action="store_true")
+    parser.add_argument("--timeout", type=int, default=30)
+    args = parser.parse_args()
+
+    client = APIClient(
+        hostname=args.hostname,
+        port=args.port,
+        verify_ssl=not args.no_verify_ssl,
+        timeout=args.timeout,
+    )
+
+    try:
+        response = client.get("/api/status")
+        response.raise_for_status()
+        data = response.json()
+
+        print("<<<myagent:sep(0)>>>")
+        print(json.dumps(data))
+
+    except requests.RequestException as e:
+        sys.stderr.write(f"API Error: {e}\n")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+### Passing verify_ssl from Ruleset
+
+In `server_side_calls/special_agent.py`:
+
+```python
+def _agent_arguments(params, host_config):
+    args = ["--hostname", host_config.primary_ip_config.address]
+
+    # Pass SSL verification setting
+    if not params.get("verify_ssl", True):
+        args.append("--no-verify-ssl")
+
+    yield SpecialAgentCommand(command_arguments=args)
+```
+
 ## Topic Options for Rule Placement
 
 ```python

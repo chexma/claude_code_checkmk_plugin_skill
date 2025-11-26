@@ -11,7 +11,7 @@ This is a Claude Code skill for CheckMK 2.4 plugin development. It provides comp
 ```
 checkmk-plugin-dev/
 ├── SKILL.md              # Main skill entry point with quick reference
-├── references/           # Detailed API documentation (16 markdown files)
+├── references/           # Detailed API documentation (17 markdown files)
 └── assets/templates/     # Ready-to-use plugin templates (17 Python files)
 ```
 
@@ -24,6 +24,7 @@ The `checkmk-plugin-dev.skill` file in the root is the bundled skill file.
 - **references/agent_based_api.md**: Check API V2 details
 - **references/rulesets_api.md**: Form specs and rule definitions
 - **references/graphing_api.md**: Metrics, graphs, perfometers
+- **references/migration_guide.md**: Migrating legacy plugins to current APIs (with helper scripts)
 
 ## CheckMK 2.4 Plugin Directory Structure
 

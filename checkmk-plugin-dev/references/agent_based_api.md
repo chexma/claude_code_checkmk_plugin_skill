@@ -184,19 +184,41 @@ yield Metric(
 
 ## Result Class
 
-```python
-yield Result(
-    state=State.OK,              # OK, WARN, CRIT, UNKNOWN
-    summary="Short text",        # Always shown (keep under 60 chars)
-    details="Extended info",     # Only in service details
-)
+**IMPORTANT:** `Result()` requires either `summary` or `notice`. Using only `details` will crash!
 
-# notice parameter: only shows in summary if state != OK
+```python
+# WRONG - CRASHES with TypeError!
+yield Result(state=State.OK, details="This crashes!")
+# TypeError: at least 'summary' or 'notice' is required
+
+# CORRECT - summary is the standard approach
 yield Result(
     state=State.OK,
-    notice="Hidden when OK, visible otherwise",
+    summary="Short text",        # Always shown (keep under 60 chars)
+    details="Extended info",     # Only in service details view
+)
+
+# CORRECT - notice: only shows in summary if state != OK
+yield Result(
+    state=State.OK,
+    notice="Hidden when OK, visible in summary when WARN/CRIT",
+)
+
+# CORRECT - combine summary with details
+yield Result(
+    state=State.WARN,
+    summary="Brief status",
+    details="Extended information shown in service details view",
 )
 ```
+
+| Parameter | Required | Behavior |
+|-----------|----------|----------|
+| `summary` | Yes* | Always shown in service output |
+| `notice` | Yes* | Only in summary when state != OK, always in details |
+| `details` | No | Only shown in service details view |
+
+*At least one of `summary` or `notice` is required.
 
 ## render Module Functions
 

@@ -27,7 +27,7 @@ Personal skills in:
 
 ## Skill Contents
 
-### Reference Documentation (16 files)
+### Reference Documentation (17 files)
 
 | File | Description |
 |------|-------------|
@@ -46,6 +46,7 @@ Personal skills in:
 | `spool_directory.md` | External program output |
 | `bakery_api.md` | Agent Bakery distribution |
 | `mkp_packaging.md` | Extension packaging |
+| `migration_guide.md` | Migrating legacy plugins to current APIs |
 | `best_practices.md` | Testing, debugging, migration |
 
 ### Templates (17 files)

@@ -32,6 +32,25 @@ perfometer_mycheck = Perfometer(...)           # Starts with perfometer_
         └── mycheck.py          # Metrics and perfometers
 ```
 
+## Common Gotchas
+
+### Result() Requires summary or notice
+
+**This will crash your plugin!**
+
+```python
+# WRONG - CRASHES with TypeError!
+yield Result(state=State.OK, details="Extended info only")
+# TypeError: at least 'summary' or 'notice' is required
+
+# CORRECT
+yield Result(state=State.OK, summary="Status text")
+yield Result(state=State.OK, notice="Shows in details, summary only when not OK")
+yield Result(state=State.OK, summary="Short", details="Extended info")
+```
+
+The `details` parameter alone is **never valid**. Always provide `summary` or `notice`.
+
 ## Parse Function Best Practices
 
 ### Always Return Dictionary for Performance

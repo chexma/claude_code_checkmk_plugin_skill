@@ -16,16 +16,14 @@ When activated, this skill enables Claude Code to:
 
 ## Installation
 
-### Claude Code
+Copy or git clone the `checkmk-plugin-dev/` directory to your Claude Code skills location.
 
-```bash
-# Add the skill to Claude Code
-claude skill add /path/to/checkmk-plugin-dev.skill
-```
+Personal skills in:
+~/.claude/skills/
 
-### Manual Setup
+​Project skills in the projects folder:
+.claude/skills/my-skill-name
 
-Copy the `checkmk-plugin-dev/` directory to your Claude Code skills location.
 
 ## Skill Contents
 
@@ -82,24 +80,6 @@ Copy the `checkmk-plugin-dev/` directory to your Claude Code skills location.
 - `active_check_executable.py` - Nagios-compatible executable
 - `active_check_server_side_calls.py` - ActiveCheckConfig
 - `active_check_ruleset.py` - ActiveCheck ruleset
-
-## CheckMK 2.4 Plugin Structure
-
-```
-~/local/lib/python3/cmk_addons/plugins/<family_name>/
-├── agent_based/        # Check plugins (agent & SNMP)
-├── rulesets/           # Rule definitions
-├── graphing/           # Metrics, graphs, perfometers
-├── server_side_calls/  # Special agent configs
-├── libexec/            # Special agent executables
-└── checkman/           # Man pages
-```
-
-## Resources
-
-- [CheckMK Exchange](https://exchange.checkmk.com) - Community plugins
-- [CheckMK Documentation](https://docs.checkmk.com) - Official docs
-- In-CheckMK: **Help > Developer resources** for API references
 
 ## License
 

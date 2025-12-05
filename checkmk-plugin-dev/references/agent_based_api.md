@@ -265,12 +265,22 @@ def check_mycheck(item, section):
 
 ## Host Labels
 
-Auto-assign labels during discovery:
+Auto-assign labels during discovery. Labels enable automatic host classification based on collected data.
 
 ```python
+from cmk.agent_based.v2 import AgentSection, HostLabel
+
 def host_label_mycheck(section):
+    """Generate host labels from section data."""
+    # Identification label
+    yield HostLabel("mycheck", "true")
+
+    # Data-based labels
     if section.get("os") == "linux":
-        yield HostLabel("os", "linux")
+        yield HostLabel("mycheck/os", "linux")
+
+    if version := section.get("version"):
+        yield HostLabel("mycheck/version", version)
 
 agent_section_mycheck = AgentSection(
     name="mycheck",
@@ -278,6 +288,18 @@ agent_section_mycheck = AgentSection(
     host_label_function=host_label_mycheck,
 )
 ```
+
+### Label Naming Convention
+- Use plugin-specific prefix: `{plugin}/key`
+- Lowercase keys, no spaces
+- Examples: `netapp/version:9.12`, `storage/vendor:NetApp`
+
+### Testing Labels
+```bash
+cmk -vvII --detect-plugins=mycheck hostname
+```
+
+**See:** `references/host_labels.md` for detailed patterns, naming conventions, and usage in rules.
 
 ## Multiple Sections
 

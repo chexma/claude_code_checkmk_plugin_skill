@@ -114,6 +114,7 @@ For detailed information, read the appropriate reference file:
 
 ### Core APIs
 - **Agent-based plugins**: `references/agent_based_api.md` - Check API V2 details
+- **Host Labels**: `references/host_labels.md` - Auto-assign labels during discovery
 - **SNMP plugins**: `references/snmp_api.md` - SNMP detection & OID handling
 - **Rulesets**: `references/rulesets_api.md` - Form specs & rule definitions
 - **Graphing/Metrics**: `references/graphing_api.md` - Metrics, graphs, perfometers

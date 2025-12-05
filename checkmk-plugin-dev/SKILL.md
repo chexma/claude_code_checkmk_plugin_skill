@@ -129,6 +129,7 @@ For detailed information, read the appropriate reference file:
 - **Active Checks**: `references/active_checks.md` - Server-side network service checks (HTTP, TCP, etc.)
 - **Bakery API**: `references/bakery_api.md` - Distribute plugins via Agent Bakery (commercial editions)
 - **MKP Packaging**: `references/mkp_packaging.md` - Creating distributable packages
+- **Man Pages**: `references/checkman_manpages.md` - Check plugin documentation
 - **Migration Guide**: `references/migration_guide.md` - Migrating legacy plugins to current APIs
 - **Best practices**: `references/best_practices.md` - Testing, debugging, migration
 

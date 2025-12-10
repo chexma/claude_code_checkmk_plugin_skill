@@ -45,7 +45,7 @@ def parse_mycheck(string_table: StringTable) -> dict | None:
     """
     if not string_table:
         return None
-    
+
     parsed = {}
     for line in string_table:
         # Process each line
@@ -55,6 +55,45 @@ def parse_mycheck(string_table: StringTable) -> dict | None:
             "value2": int(line[2]) if len(line) > 2 else 0,
         }
     return parsed
+```
+
+### Parse vs Check Function Timing (IMPORTANT)
+
+> **Problem:** The parse function runs BEFORE the check function, but ruleset parameters are only available in the check function!
+
+If you need ruleset params to affect parsing (e.g., which format to use, what to extract), store raw strings in a dataclass and parse in the check function:
+
+```python
+from dataclasses import dataclass
+from typing import List
+
+@dataclass
+class RawMyCheckData:
+    """Store raw strings for deferred parsing."""
+    raw_value: str       # Keep as string
+    raw_timestamp: str   # Parse in check function with params
+
+def parse_mycheck(string_table: StringTable) -> dict[str, RawMyCheckData] | None:
+    if not string_table:
+        return None
+    parsed = {}
+    for line in string_table:
+        # Store raw strings, defer parsing to check function
+        parsed[line[0]] = RawMyCheckData(
+            raw_value=line[1],
+            raw_timestamp=line[2] if len(line) > 2 else "",
+        )
+    return parsed
+
+def check_mycheck(item, params, section):
+    data = section.get(item)
+    if not data:
+        return
+
+    # NOW we have params - parse based on configuration
+    date_format = params.get("date_format", "%Y-%m-%d")
+    timestamp = datetime.strptime(data.raw_timestamp, date_format)
+    # ...
 ```
 
 ## CheckPlugin Class

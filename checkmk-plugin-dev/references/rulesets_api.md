@@ -185,6 +185,9 @@ BooleanChoice(
 ```
 
 ### SingleChoice (Dropdown)
+
+> **IMPORTANT: `name=` must be a valid Python identifier, NOT a reserved keyword!**
+
 ```python
 SingleChoice(
     title=Title("Protocol"),
@@ -196,6 +199,24 @@ SingleChoice(
     prefill=DefaultValue("https"),
 )
 ```
+
+#### SingleChoiceElement Naming Rules
+
+The `name=` parameter must be a valid, non-reserved Python identifier:
+
+```python
+# BAD - These cause errors (Python reserved keywords)
+SingleChoiceElement(name="True", title=Title("Enabled"))   # WRONG!
+SingleChoiceElement(name="False", title=Title("Disabled")) # WRONG!
+SingleChoiceElement(name="None", title=Title("Not set"))   # WRONG!
+
+# GOOD - Use descriptive identifiers instead
+SingleChoiceElement(name="enabled", title=Title("Enabled"))
+SingleChoiceElement(name="disabled", title=Title("Disabled"))
+SingleChoiceElement(name="not_set", title=Title("Not set"))
+```
+
+The `title=Title(...)` can display any text to the user - only `name=` has restrictions.
 
 ### CascadingSingleChoice (Conditional)
 Shows different forms based on selection:

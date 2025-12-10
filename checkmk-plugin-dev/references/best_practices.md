@@ -181,6 +181,25 @@ def check_mycheck(item, params, section):
 
 ## Testing Workflow
 
+### Essential Debug Commands
+
+```bash
+# Debug rule application - shows effective params for a host
+cmk -D <hostname>
+
+# Get raw agent output (what the agent sends)
+cmk -d <hostname>
+
+# Test discovery for specific plugin
+cmk -vI --detect-plugins=<plugin> <hostname>
+
+# Test check execution with verbose output
+cmk -v --detect-plugins=<plugin> <hostname>
+
+# Full debug mode (shows stack traces on errors)
+cmk --debug --detect-plugins=<plugin> <hostname>
+```
+
 ### Development Cycle
 ```bash
 # 1. Edit plugin files

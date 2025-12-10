@@ -66,6 +66,30 @@ cmk -v --detect-plugins=myplugin hostname
 # Debug mode
 cmk --debug --detect-plugins=myplugin hostname
 
+# Show effective parameters per service
+cmk -D hostname
+
 # Restart after ruleset/graphing changes
 omd restart apache
 ```
+
+## Critical: check_levels() Format (v2 API)
+
+```python
+# CORRECT formats:
+levels_upper=("fixed", (warn, crit))    # Fixed thresholds
+levels_upper=("no_levels", None)        # Explicitly disabled
+levels_upper=None                       # No levels
+
+# WRONG - causes TypeError!
+levels_upper=(warn, crit)               # Missing level type!
+```
+
+SimpleLevels from Rulesets API produces the correct format - pass directly to check_levels().
+
+## Key Documentation Updates
+
+- **references/agent_based_api.md**: Critical check_levels v2 format warning, TypedDict patterns for parameters
+- **references/rulesets_api.md**: Factory functions for DRY ruleset definitions
+- **references/best_practices.md**: Crash report analysis commands
+- **references/mkp_packaging.md**: Checkman file inclusion in MKP manifest

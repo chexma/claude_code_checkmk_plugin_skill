@@ -184,7 +184,7 @@ def check_mycheck(item, params, section):
 ### Essential Debug Commands
 
 ```bash
-# Debug rule application - shows effective params for a host
+# Debug rule application - shows effective params per service
 cmk -D <hostname>
 
 # Get raw agent output (what the agent sends)
@@ -199,6 +199,27 @@ cmk -v --detect-plugins=<plugin> <hostname>
 # Full debug mode (shows stack traces on errors)
 cmk --debug --detect-plugins=<plugin> <hostname>
 ```
+
+### Crash Report Analysis
+
+When a check crashes, CheckMK creates a crash report:
+
+```bash
+# View crash report details by ID
+cmk --crash-report-details <crash-id>
+
+# Direct crash info file location
+cat /opt/omd/sites/<site>/var/check_mk/crashes/check/<crash-id>/crash.info
+
+# List recent crashes
+ls -lt /opt/omd/sites/<site>/var/check_mk/crashes/check/
+```
+
+The crash report contains:
+- Full Python traceback
+- Section data at time of crash
+- Parameters passed to check function
+- CheckMK version info
 
 ### Development Cycle
 ```bash

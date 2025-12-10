@@ -2,6 +2,50 @@
 
 MKP (Monitoring Kit Package) is the standard format for CheckMK extensions.
 
+## CRITICAL: Package Management Safety
+
+> **WARNING: `mkp disable` and `mkp remove` DELETE FILES!**
+>
+> When plugin files are bind-mounted from a development workspace (e.g., Docker volumes), these commands permanently delete source files!
+
+### Safe Commands
+
+| Command | Effect | Use When |
+|---------|--------|----------|
+| `mkp release <name>` | Unregisters package, **keeps files** | Detaching files without deletion |
+| `mkp enable <name> <version>` | Restores from MKP archive | Recovering after accidental disable |
+| `mkp package <manifest>` | Builds .mkp file | **Always build before disable/remove!** |
+
+### Dangerous Commands
+
+| Command | Effect | DANGER |
+|---------|--------|--------|
+| `mkp disable <name>` | Unregisters AND **DELETES all package files** | Destroys bind-mounted source! |
+| `mkp remove <name> <version>` | **DELETES package and files permanently** | No recovery without backup! |
+
+### Safe Workflow for Development
+
+```bash
+# 1. ALWAYS build MKP first (creates recoverable archive)
+mkp package ~/var/check_mk/packages/myplugin
+
+# 2. Now safe to disable (files can be restored from MKP)
+mkp disable myplugin
+
+# 3. To recover deleted files
+mkp enable myplugin 1.0.0
+```
+
+### Recovery After Accidental Deletion
+
+```bash
+# If you built an MKP before deletion:
+mkp enable <name> <version>
+
+# If no MKP exists: restore from git/backup
+git checkout -- local/lib/python3/cmk_addons/plugins/myplugin/
+```
+
 ## Quick Start
 
 ```bash

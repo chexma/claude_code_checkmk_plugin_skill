@@ -246,38 +246,45 @@ register.bakery_plugin(
 from .bakery_api.v1 import (
     # Operating systems
     OS,                    # Enum: LINUX, WINDOWS, SOLARIS, AIX
-    
+
     # Scriptlet steps (package manager hooks)
     DebStep,               # PREINST, POSTINST, PRERM, POSTRM
-    RpmStep,               # PRE, POST, PREUN, POSTUN
+    RpmStep,               # PRE, POST, PREUN, POSTUN, PRETRANS, POSTTRANS
     SolStep,               # PREINSTALL, POSTINSTALL, PREREMOVE, POSTREMOVE
-    
+
     # File artifacts
     Plugin,                # Agent plugin executable
     PluginConfig,          # Generated config file for plugin
     SystemBinary,          # Additional binary in /usr/bin
-    SystemConfig,          # System-wide config file
+    SystemConfig,          # System-wide config file (/etc)
     Scriptlet,             # Package manager scriptlet
-    
+
     # Windows config
     WindowsConfigEntry,    # Single YAML entry
-    WindowsConfigItems,    # List of items
-    WindowsGlobalConfigEntry,   # Global agent config
-    WindowsSystemConfigEntry,   # System section config
-    
+    WindowsConfigItems,    # List of items (merged with existing)
+    WindowsGlobalConfigEntry,   # Shortcut for global section
+    WindowsSystemConfigEntry,   # Shortcut for system section
+
     # Registration
     register,              # register.bakery_plugin()
-    
+
     # Type annotations
     FileGenerator,
     ScriptletGenerator,
     WindowsConfigGenerator,
-    WindowsConfigContent,
-    
+
     # Helpers
-    quote_shell_string,    # Escape string for shell
-    password_store,        # Access password store
+    quote_shell_string,    # Escape string for shell (deprecated, use shlex.quote)
 )
+```
+
+### Operating Systems
+
+```python
+OS.LINUX    # Linux target system
+OS.WINDOWS  # Windows target system
+OS.SOLARIS  # Solaris target system
+OS.AIX      # AIX target system
 ```
 
 ### Artifact Classes
@@ -290,14 +297,27 @@ Agent plugin file to be executed by the CheckMK agent:
 yield Plugin(
     base_os=OS.LINUX,
     source=Path("my_plugin"),      # Source file in agents/plugins/
-    target=Path("my_plugin"),      # Target filename on host
-    interval=300,                  # Async execution interval (seconds)
+    target=Path("my_plugin"),      # Target filename on host (optional, defaults to source)
+    interval=300,                  # Caching interval in seconds (optional)
+    asynchronous=True,             # Windows: don't wait for termination (optional)
+    timeout=60,                    # Windows: max wait time in seconds (optional)
+    retry_count=3,                 # Windows: max retries after failure (optional)
 )
 ```
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `base_os` | `OS` | Target operating system (required) |
+| `source` | `Path` | Path relative to plugin source directory on CheckMK site (usually just filename) |
+| `target` | `Path \| None` | Target path relative to plugin directory on host. If omitted, uses source path |
+| `interval` | `int \| None` | Caching interval in seconds. Plugin only re-executes after interval elapses |
+| `asynchronous` | `bool \| None` | Windows only: Don't wait for plugin termination. An `interval` implies async |
+| `timeout` | `int \| None` | Windows only: Maximum wait time for plugin to terminate |
+| `retry_count` | `int \| None` | Windows only: Maximum retries after failed execution |
+
 #### PluginConfig
 
-Configuration file generated for the plugin:
+Configuration file generated for the plugin. Placed in the agent's config directory (default `/etc/check_mk`):
 
 ```python
 yield PluginConfig(
@@ -308,21 +328,56 @@ yield PluginConfig(
 )
 ```
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `base_os` | `OS` | Target operating system (required) |
+| `lines` | `Iterable[str]` | Lines of text for the config file |
+| `target` | `Path` | Path relative to agent's config directory (usually just filename) |
+| `include_header` | `bool` | If True, prepends "# Created by Check_MK Agent Bakery..." header |
+
+#### SystemConfig
+
+Configuration file for the target system (placed under `/etc`). Unix only:
+
+```python
+yield SystemConfig(
+    base_os=OS.LINUX,
+    lines=["[Unit]", "Description=My Service", "..."],
+    target=Path("systemd/system/myservice.service"),  # Relative to /etc
+    include_header=True,
+)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `base_os` | `OS` | Target operating system (required) |
+| `lines` | `list[str]` | Lines of text for the config file |
+| `target` | `Path` | Path relative to `/etc` on target system |
+| `include_header` | `bool` | If True, prepends "# Created by Check_MK Agent Bakery..." header |
+
+Use this for deploying systemd service files, config files to service `.d` directories, etc.
+
 #### SystemBinary
 
-Additional executable placed in system path:
+Additional executable placed in system path (`/usr/bin` on Unix, `bin/` folder on Windows):
 
 ```python
 yield SystemBinary(
     base_os=OS.LINUX,
-    source=Path("my_tool"),   # Source in agents/custom/
-    # Target is /usr/bin/my_tool
+    source=Path("my_tool"),   # Source in agents/ directory on site
+    target=Path("my_tool"),   # Optional target name
 )
 ```
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `base_os` | `OS` | Target operating system (required) |
+| `source` | `Path` | Path relative to agent source directory on CheckMK site |
+| `target` | `Path \| None` | Target path relative to binary directory. If omitted, uses source path |
+
 #### Scriptlet
 
-Package manager hook scripts:
+Package manager hook scripts (DEB maintainer scripts, RPM scriptlets, Solaris installation scripts):
 
 ```python
 # Debian
@@ -334,17 +389,35 @@ yield Scriptlet(step=RpmStep.POST, lines=['systemctl start myservice'])
 yield Scriptlet(step=RpmStep.PREUN, lines=['systemctl stop myservice'])
 ```
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `step` | `DebStep \| RpmStep \| SolStep` | Which package transaction step to execute at |
+| `lines` | `list[str]` | Shell commands (no shebang needed, uses Bourne shell) |
+
+**Important**: Do NOT end scriptlets with `exit 0` - CheckMK adds more commands after yours.
+
 Available steps:
 
-| Format | Steps |
-|--------|-------|
-| DEB | `PREINST`, `POSTINST`, `PRERM`, `POSTRM` |
-| RPM | `PRE`, `POST`, `PREUN`, `POSTUN` |
-| Solaris | `PREINSTALL`, `POSTINSTALL`, `PREREMOVE`, `POSTREMOVE` |
+| Format | Steps | Description |
+|--------|-------|-------------|
+| **DEB** | `PREINST` | Before package installation |
+| | `POSTINST` | Right after package installation |
+| | `PRERM` | Right before package uninstallation |
+| | `POSTRM` | After package uninstallation |
+| **RPM** | `PRE` | Before package installation |
+| | `POST` | Right after package installation |
+| | `PREUN` | Right before package uninstallation |
+| | `POSTUN` | Right after package uninstallation |
+| | `PRETRANS` | Before complete package transaction |
+| | `POSTTRANS` | After complete package transaction |
+| **Solaris** | `PREINSTALL` | Before package installation |
+| | `POSTINSTALL` | Right after package installation |
+| | `PREREMOVE` | Right before package uninstallation |
+| | `POSTREMOVE` | After package uninstallation |
 
 #### WindowsConfigEntry
 
-Entry in Windows agent YAML configuration:
+Entry in Windows agent YAML configuration (`check_mk.install.yml`):
 
 ```python
 # Creates entry in check_mk.yml:
@@ -356,6 +429,46 @@ yield WindowsConfigEntry(
 )
 ```
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `list[str]` | Path in YAML structure: `["section", "name"]` or `["section", "subsection", "name"]` (2-3 elements) |
+| `content` | `int \| str \| bool \| dict \| list` | Value for the entry (must be YAML-serializable) |
+
+#### WindowsConfigItems
+
+List of items that will be **merged** with existing lists (unlike `WindowsConfigEntry` which overwrites):
+
+```python
+# Adds items to an existing list in check_mk.yml
+yield WindowsConfigItems(
+    path=["plugins", "enabled_list"],
+    content=["my_plugin", "other_plugin"],
+)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `list[str]` | Path in YAML structure (2-3 elements) |
+| `content` | `list[...]` | List of items to merge (same types as WindowsConfigEntry content) |
+
+#### WindowsGlobalConfigEntry
+
+Shortcut for entries in the `global` section:
+
+```python
+# Equivalent to: WindowsConfigEntry(path=["global", "enabled"], content=True)
+yield WindowsGlobalConfigEntry(name="enabled", content=True)
+```
+
+#### WindowsSystemConfigEntry
+
+Shortcut for entries in the `system` section:
+
+```python
+# Equivalent to: WindowsConfigEntry(path=["system", "controller"], content="localhost")
+yield WindowsSystemConfigEntry(name="controller", content="localhost")
+```
+
 ### Registration
 
 ```python
@@ -365,6 +478,35 @@ register.bakery_plugin(
     scriptlets_function=get_scriptlets,            # ScriptletGenerator (optional)
     windows_config_function=get_windows_config,    # WindowsConfigGenerator (optional)
 )
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `str` | Plugin name. Must be unique and match the corresponding AgentConfig ruleset name. Only ASCII letters, digits, and underscores allowed |
+| `files_function` | `Callable[..., FileGenerator] \| None` | Generator yielding `Plugin`, `PluginConfig`, `SystemConfig`, or `SystemBinary`. Receives `conf` keyword argument |
+| `scriptlets_function` | `Callable[..., ScriptletGenerator] \| None` | Generator yielding `Scriptlet`. Receives `conf` and `aghash` keyword arguments |
+| `windows_config_function` | `Callable[..., WindowsConfigGenerator] \| None` | Generator yielding Windows config entries. Receives `conf` and `aghash` keyword arguments |
+
+### Function Parameters
+
+The generator functions receive keyword arguments based on their parameter names:
+
+| Parameter | Available In | Description |
+|-----------|--------------|-------------|
+| `conf` | All functions | Configuration dictionary from the AgentConfig ruleset |
+| `aghash` | `scriptlets_function`, `windows_config_function` | Hash of the current agent configuration and plugin files |
+
+```python
+def get_files(conf: dict) -> FileGenerator:
+    # conf contains ruleset configuration
+    ...
+
+def get_scriptlets(conf: dict, aghash: str) -> ScriptletGenerator:
+    # aghash is the agent configuration hash
+    ...
+
+def get_windows_config(conf: dict, aghash: str) -> WindowsConfigGenerator:
+    ...
 ```
 
 ## File Locations

@@ -30,16 +30,18 @@ from .bakery_api.v1 import (
     # Artifact classes
     Plugin,
     PluginConfig,
+    SystemConfig,       # System-wide config files (under /etc)
     SystemBinary,
     Scriptlet,
     WindowsConfigEntry,
+    WindowsConfigItems, # For merging lists in Windows YAML config
     # Registration
     register,
     # Type annotations
     FileGenerator,
     ScriptletGenerator,
     WindowsConfigGenerator,
-    # Helpers
+    # Helpers (note: quote_shell_string is deprecated, use shlex.quote instead)
     quote_shell_string,
 )
 
@@ -123,6 +125,10 @@ def get_plugin_files(conf: MyPluginConfig) -> FileGenerator:
         source=Path(WINDOWS_PLUGIN),
         target=Path(WINDOWS_PLUGIN),
         interval=interval_int,
+        # Windows-specific options:
+        # asynchronous=True,   # Don't wait for plugin termination (implied by interval)
+        # timeout=60,          # Max wait time in seconds
+        # retry_count=3,       # Max retries after failure
     )
     
     # Windows configuration is handled via WindowsConfigEntry in
@@ -155,7 +161,25 @@ def get_plugin_files(conf: MyPluginConfig) -> FileGenerator:
     #
     # yield SystemBinary(
     #     base_os=OS.LINUX,
-    #     source=Path("my_helper_tool"),  # From agents/custom/
+    #     source=Path("my_helper_tool"),  # From agents/ directory on site
+    # )
+
+    # -------------------------------------------------------------------------
+    # System Configuration Files (optional)
+    # -------------------------------------------------------------------------
+    # Uncomment to deploy system-wide config files (e.g., systemd services)
+    # These are placed under /etc on the target system
+    #
+    # yield SystemConfig(
+    #     base_os=OS.LINUX,
+    #     lines=[
+    #         "[Unit]",
+    #         "Description=My Plugin Service",
+    #         "[Service]",
+    #         "ExecStart=/usr/bin/my_plugin_daemon",
+    #     ],
+    #     target=Path("systemd/system/my_plugin.service"),
+    #     include_header=True,
     # )
 
 
@@ -195,17 +219,18 @@ def _generate_ini_config(conf: MyPluginConfig) -> List[str]:
 # Package Scriptlets
 # =============================================================================
 
-def get_scriptlets(conf: MyPluginConfig) -> ScriptletGenerator:
+def get_scriptlets(conf: MyPluginConfig, aghash: str = "") -> ScriptletGenerator:
     """
     Generate package manager scriptlets (post-install, pre-remove, etc.).
-    
+
     These are shell commands executed during package installation/removal.
-    
+
     Note: Do NOT end with 'exit 0' - CheckMK adds more commands after yours.
-    
+
     Args:
         conf: Configuration dictionary from the ruleset
-        
+        aghash: Hash of the agent configuration (optional, for tracking deployments)
+
     Yields:
         Scriptlet artifacts for DEB, RPM, and Solaris packages
     """
@@ -256,16 +281,17 @@ def get_scriptlets(conf: MyPluginConfig) -> ScriptletGenerator:
 # Windows Configuration
 # =============================================================================
 
-def get_windows_config(conf: MyPluginConfig) -> WindowsConfigGenerator:
+def get_windows_config(conf: MyPluginConfig, aghash: str = "") -> WindowsConfigGenerator:
     """
     Generate Windows agent YAML configuration entries.
-    
+
     These entries are written to C:\\ProgramData\\checkmk\\agent\\check_mk.yml
     The Windows plugin can read these values from the YAML file.
-    
+
     Args:
         conf: Configuration dictionary from the ruleset
-        
+        aghash: Hash of the agent configuration (optional, for tracking deployments)
+
     Yields:
         WindowsConfigEntry artifacts
     """

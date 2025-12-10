@@ -315,6 +315,17 @@ yield Plugin(
 | `timeout` | `int \| None` | Windows only: Maximum wait time for plugin to terminate |
 | `retry_count` | `int \| None` | Windows only: Maximum retries after failed execution |
 
+> **Key Fact:** The `source` path is **relative** to the plugin source directory - usually just the filename. The API automatically determines the full path based on `base_os`:
+>
+> ```python
+> # source is just the filename - API handles the rest
+> Plugin(base_os=OS.LINUX, source=Path("my_plugin"))
+> # → Full path: ~/local/share/check_mk/agents/plugins/my_plugin
+>
+> Plugin(base_os=OS.WINDOWS, source=Path("my_plugin.ps1"))
+> # → Full path: ~/local/share/check_mk/agents/windows/plugins/my_plugin.ps1
+> ```
+
 #### PluginConfig
 
 Configuration file generated for the plugin. Placed in the agent's config directory (default `/etc/check_mk`):

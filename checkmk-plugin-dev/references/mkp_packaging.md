@@ -169,6 +169,25 @@ mkp release <name>
 | `web` | `local/share/check_mk/web/` |
 | `checkman` | `local/share/check_mk/checkman/` |
 
+### Including Checkman Files in MKP
+
+Checkman files (man pages) are part of `cmk_addons_plugins` when using the new plugin structure:
+
+```python
+# In manifest 'files' section:
+'files': {
+    'cmk_addons_plugins': [
+        'myplugin/agent_based/mycheck.py',
+        'myplugin/checkman/mycheck',        # No file extension!
+        'myplugin/rulesets/mycheck.py',
+    ]
+}
+```
+
+**Path format:** `<plugin_family>/checkman/<check_name>` (no extension)
+
+The checkman file must match the check plugin name exactly.
+
 ## Workflows
 
 ### New Package

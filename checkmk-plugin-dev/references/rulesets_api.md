@@ -413,3 +413,91 @@ check_plugin_mycheck = CheckPlugin(
     check_ruleset_name="mycheck",  # Links to rule_spec with this name
 )
 ```
+
+## Factory Functions for DRY Rulesets
+
+When multiple parameters share similar patterns, use factory functions to reduce duplication:
+
+### Age/Time Levels Factory
+```python
+from cmk.rulesets.v1 import Title, Help
+from cmk.rulesets.v1.form_specs import (
+    SimpleLevels, LevelDirection, DefaultValue, TimeSpan, TimeMagnitude
+)
+
+def _age_levels(title: str, help_text: str, warn_days: float, crit_days: float) -> SimpleLevels:
+    """Factory for age-based thresholds with day/hour display."""
+    return SimpleLevels(
+        title=Title(title),
+        help_text=Help(help_text),
+        form_spec_template=TimeSpan(
+            displayed_magnitudes=[TimeMagnitude.DAY, TimeMagnitude.HOUR]
+        ),
+        level_direction=LevelDirection.UPPER,
+        prefill_fixed_levels=DefaultValue(
+            value=(warn_days * 86400.0, crit_days * 86400.0)
+        ),
+    )
+
+# Usage in parameter_form:
+"cert_age": DictElement(
+    parameter_form=_age_levels(
+        "Certificate age",
+        "Alert when certificate is older than threshold",
+        warn_days=30.0,
+        crit_days=7.0
+    ),
+),
+"backup_age": DictElement(
+    parameter_form=_age_levels(
+        "Backup age",
+        "Alert when last backup exceeds threshold",
+        warn_days=1.0,
+        crit_days=3.0
+    ),
+),
+```
+
+### Service State Choice Factory
+```python
+from cmk.rulesets.v1 import Title, Help
+from cmk.rulesets.v1.form_specs import SingleChoice, SingleChoiceElement, DefaultValue
+
+def _service_state_choice(title: str, help_text: str = "") -> SingleChoice:
+    """Factory for enabled/disabled service state choices."""
+    return SingleChoice(
+        title=Title(title),
+        help_text=Help(help_text) if help_text else None,
+        elements=[
+            SingleChoiceElement(name="enabled", title=Title("Enabled")),
+            SingleChoiceElement(name="disabled", title=Title("Disabled")),
+        ],
+        prefill=DefaultValue("enabled"),
+    )
+
+# Usage:
+"monitoring_state": DictElement(
+    parameter_form=_service_state_choice(
+        "Monitoring state",
+        "Enable or disable monitoring for this item"
+    ),
+),
+```
+
+### Percentage Levels Factory
+```python
+def _percent_levels(title: str, warn: float = 80.0, crit: float = 90.0) -> SimpleLevels:
+    """Factory for percentage-based thresholds."""
+    return SimpleLevels(
+        title=Title(title),
+        form_spec_template=Float(unit_symbol="%"),
+        level_direction=LevelDirection.UPPER,
+        prefill_fixed_levels=DefaultValue(value=(warn, crit)),
+    )
+```
+
+**Benefits:**
+- Consistent UI across similar parameters
+- Single place to update defaults
+- Reduces copy-paste errors
+- Self-documenting parameter patterns

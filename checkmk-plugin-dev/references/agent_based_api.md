@@ -196,17 +196,32 @@ yield from check_levels(
 )
 ```
 
-### Levels Format (from Rulesets API)
+### Levels Format (CRITICAL - v2 API)
+
+> **WARNING:** The v2 `check_levels()` function requires a specific tuple format. Using the wrong format causes a `TypeError`!
+
 ```python
-# Fixed levels
-levels_upper=("fixed", (80.0, 90.0))
+# CORRECT formats for check_levels():
+levels_upper=("fixed", (warn, crit))    # ✅ Fixed thresholds
+levels_upper=("no_levels", None)        # ✅ Explicitly disabled
+levels_upper=None                       # ✅ No levels configured
 
-# No levels
-levels_upper=None
-
-# From params dictionary
-levels_upper=params.get("cpu_levels")
+# WRONG - causes TypeError!
+levels_upper=(warn, crit)               # ❌ Missing level type!
 ```
+
+**Why this matters:** `SimpleLevels` from the Rulesets API produces `("fixed", (warn, crit))` tuples - pass them directly to `check_levels()` without modification.
+
+```python
+# From params dictionary (already in correct format from SimpleLevels)
+levels_upper=params.get("cpu_levels")   # Returns ("fixed", (80.0, 90.0)) or None
+```
+
+### v1 vs v2 API Note
+
+- `cmk.agent_based.v2` is the current API for CheckMK 2.4
+- Some official plugins still use `check_levels_v1` (not yet migrated)
+- New plugins should always use v2 `check_levels()` - it's future-proof
 
 ## Metric Class
 
@@ -357,6 +372,43 @@ def check_combined(item, section_section_a, section_section_b):
     # Access each section by name prefixed with section_
     pass
 ```
+
+## TypedDict for Check Parameters
+
+For better type safety and IDE support, use TypedDict to define parameter structures:
+
+```python
+from typing import Literal, TypedDict
+
+# Level type definitions matching Rulesets API output
+LevelsType = (
+    tuple[Literal["fixed"], tuple[float, float]] |
+    tuple[Literal["no_levels"], None] |
+    None
+)
+
+# Service state as string literal (from SingleChoice elements)
+ServiceStateType = Literal["enabled", "disabled"]
+
+class MyCheckParams(TypedDict, total=False):
+    """Type definition for check parameters."""
+    age_levels: LevelsType
+    size_levels: LevelsType
+    feature_state: ServiceStateType
+    timeout: int
+
+def check_mycheck(item: str, params: MyCheckParams, section) -> CheckResult:
+    # IDE provides autocomplete and type checking
+    age_levels = params.get("age_levels")
+    timeout = params.get("timeout", 30)
+    # ...
+```
+
+**Benefits:**
+- IDE autocomplete for parameter keys
+- Type checking catches mismatched parameter names
+- Self-documenting code
+- Matches `SingleChoiceElement(name="enabled")` patterns in rulesets
 
 ## Debugging
 

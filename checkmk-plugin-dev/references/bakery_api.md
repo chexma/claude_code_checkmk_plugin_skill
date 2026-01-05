@@ -12,6 +12,19 @@ The Bakery API (commercial editions) allows packaging agent plugins for automati
 - Configure Windows agent YAML entries
 - Bundle everything in an MKP package
 
+## Scope and Limitations
+
+**The Bakery API covers:**
+- Deploying plugin files to agent packages
+- Generating plugin configuration files
+- Executing package scriptlets (RPM/DEB/Solaris PKG)
+- Windows agent YAML configuration entries
+
+**NOT covered by the Bakery API:**
+- Definition of the ruleset configuration (use `AgentConfig` in Rulesets API)
+- Writing the agent plugin scripts themselves
+- Other additional files that plugins may require
+
 ## Directory Structure
 
 ```
@@ -273,8 +286,8 @@ from .bakery_api.v1 import (
     ScriptletGenerator,
     WindowsConfigGenerator,
 
-    # Helpers
-    quote_shell_string,    # Escape string for shell (deprecated, use shlex.quote)
+    # Helpers (deprecated - use shlex.quote instead)
+    quote_shell_string,
 )
 ```
 
@@ -507,18 +520,24 @@ The generator functions receive keyword arguments based on their parameter names
 | `conf` | All functions | Configuration dictionary from the AgentConfig ruleset |
 | `aghash` | `scriptlets_function`, `windows_config_function` | Hash of the current agent configuration and plugin files |
 
+> **Why `aghash` is not available in `files_function`:** The `aghash` is formed from the packaged files - it can only be computed after the files are determined. Since `files_function` produces the files, `aghash` isn't available there yet.
+
 ```python
 def get_files(conf: dict) -> FileGenerator:
     # conf contains ruleset configuration
+    # aghash NOT available here
     ...
 
 def get_scriptlets(conf: dict, aghash: str) -> ScriptletGenerator:
-    # aghash is the agent configuration hash
+    # aghash is computed from packaged files
     ...
 
 def get_windows_config(conf: dict, aghash: str) -> WindowsConfigGenerator:
+    # aghash available for config versioning
     ...
 ```
+
+Arguments are **keyword-only** - the function parameter names must match exactly (`conf`, `aghash`). Unused arguments can be omitted from the function signature.
 
 ## File Locations
 
@@ -622,9 +641,23 @@ $user = $config.hello_world.user
 1. **Name consistency**: Bakery plugin name must match AgentConfig ruleset name
 2. **No exit 0**: Don't end scriptlets with `exit 0` - CheckMK adds more commands
 3. **Use TypedDict**: Define configuration structure with TypedDict
-4. **Quote strings**: Use `quote_shell_string()` for shell config files
+4. **Quote strings**: Use `shlex.quote()` for shell config files (preferred over deprecated `quote_shell_string`)
 5. **Test baking**: After changes, bake a new agent and verify content
 6. **Interval as int**: Convert `interval` from float to int for Plugin class
+
+### Deprecation Note: quote_shell_string
+
+`quote_shell_string()` is **deprecated** and is just an alias for `shlex.quote`. While it remains available in Bakery API v1, use `shlex.quote` for new code:
+
+```python
+import shlex
+
+def _get_solaris_cfg_lines(user: str, content: str) -> list[str]:
+    return [
+        f'USER={shlex.quote(user)}',
+        f'CONTENT={shlex.quote(content)}',
+    ]
+```
 
 ## Debugging
 

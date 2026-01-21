@@ -671,3 +671,12 @@ tar -tvf ~/var/check_mk/agents/linux/check-mk-agent_*.deb
 # Check agent package logs
 tail -f ~/var/log/agent-bakery.log
 ```
+
+---
+
+## Related Topics
+
+- **AgentConfig ruleset** → `rulesets_api.md` (parameter forms)
+- **Agent plugin scripts** → `agent_plugins.md` (what runs on hosts)
+- **Package as MKP** → `mkp_packaging.md`
+- **Best practices** → `best_practices.md`

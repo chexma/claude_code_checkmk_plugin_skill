@@ -501,3 +501,13 @@ def _percent_levels(title: str, warn: float = 80.0, crit: float = 90.0) -> Simpl
 - Single place to update defaults
 - Reduces copy-paste errors
 - Self-documenting parameter patterns
+
+---
+
+## Related Topics
+
+- **Use params in check function** → `agent_based_api.md` (check_levels integration)
+- **Special agent configuration** → `special_agents.md` (SpecialAgent rule spec)
+- **Active check configuration** → `active_checks.md` (ActiveCheck rule spec)
+- **Agent Bakery configuration** → `bakery_api.md` (AgentConfig rule spec)
+- **Best practices** → `best_practices.md`

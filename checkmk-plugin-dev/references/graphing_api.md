@@ -330,3 +330,11 @@ Graphing definitions provide:
 - Consistent colors
 - Combined graphs
 - Perfometer display
+
+---
+
+## Related Topics
+
+- **Emit metrics from checks** → `agent_based_api.md` (Metric class, check_levels)
+- **Package graphing files** → `mkp_packaging.md`
+- **Best practices** → `best_practices.md`

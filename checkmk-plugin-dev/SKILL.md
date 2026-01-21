@@ -1,12 +1,61 @@
 ---
 name: checkmk-plugin-dev
 description: >
-  Comprehensive CheckMK 2.4 plugin development skill covering all plugin types and APIs.
-  Use when creating agent-based checks, SNMP plugins, special agents, active checks,
-  local checks, rulesets, metrics, inventory plugins, or packaging extensions as MKP.
+  CheckMK 2.4 plugin development with 20 references, 17 templates, and decision trees.
+  For agent-based checks, SNMP plugins, special agents, active checks, rulesets,
+  metrics, inventory, and MKP packaging. Use when: creating CheckMK plugins, building
+  custom checks, packaging extensions, migrating legacy plugins, or configuring agent bakery.
+  NOT for: REST API client code, CheckMK core development, or real-time alerting webhooks.
 ---
 
 # CheckMK 2.4 Plugin Development
+
+## Quick Navigation
+
+- [Choose Your Path](#choose-your-path) - Start here based on your use case
+- [Directory Structure](#directory-structure-checkmk-24)
+- [Variable Naming (CRITICAL)](#variable-naming-prefixes-critical)
+- [Quick Start Example](#quick-start-agent-based-check-plugin)
+- [Testing Commands](#testing-commands)
+- [Reference Files](#reference-files)
+- [Templates by Use Case](#templates-by-use-case)
+- [Key Imports](#key-imports-by-api)
+- [Common Patterns](#common-patterns)
+
+## Choose Your Path
+
+### By Use Case
+
+| If you want to... | Start here | Template |
+|---|---|---|
+| Monitor a REST API (cloud, app) | `references/special_agents.md` | `datasource_complete.py` |
+| Monitor network devices (SNMP) | `references/snmp_api.md` | `snmp_check.py` |
+| Process agent output | `references/agent_based_api.md` | `agent_check_simple.py` |
+| Check network services (HTTP/TCP) | `references/active_checks.md` | `active_check_executable.py` |
+| Run scripts on monitored hosts | `references/agent_plugins.md` | `linux_agent_plugin.py` |
+| Simplest host-side check | `references/local_checks.md` | `local_check.py` |
+| Monitor VMs/containers | `references/piggyback_api.md` | `datasource_complete.py` |
+| Distribute plugins via UI | `references/bakery_api.md` | `bakery_plugin.py` |
+| Package for distribution | `references/mkp_packaging.md` | - |
+
+### By Starting Point
+
+| If you have... | Start here |
+|---|---|
+| Existing Nagios plugin | `references/migration_guide.md` |
+| REST API to monitor | `references/special_agents.md` |
+| Network device (SNMP) | `references/snmp_api.md` |
+| Questions about thresholds/rules | `references/rulesets_api.md` |
+| Multi-host data (VMs, containers) | `references/piggyback_api.md` |
+
+### API Combinations by Plugin Type
+
+| Plugin Type | APIs Needed |
+|---|---|
+| Agent-based check | Check API V2 + Rulesets API V1 + (optional) Graphing API V1 |
+| Special agent | Server-Side Calls API + Check API V2 + Rulesets API V1 |
+| Active check | Server-Side Calls API + (optional) Rulesets API V1 |
+| SNMP check | Check API V2 (SNMPSection) + Rulesets API V1 |
 
 ## Overview
 
@@ -46,7 +95,7 @@ All plugins go under `~/local/lib/python3/cmk_addons/plugins/<family_name>/`:
 
 Plugins are discovered by name prefix:
 - `agent_section_` - Agent sections
-- `snmp_section_` - SNMP sections  
+- `snmp_section_` - SNMP sections
 - `check_plugin_` - Check plugins
 - `inventory_plugin_` - Inventory plugins
 - `rule_spec_` - Ruleset specifications
@@ -61,7 +110,7 @@ Plugins are discovered by name prefix:
 ```python
 #!/usr/bin/env python3
 from cmk.agent_based.v2 import (
-    AgentSection, CheckPlugin, Service, Result, State, 
+    AgentSection, CheckPlugin, Service, Result, State,
     Metric, check_levels, render
 )
 
@@ -80,7 +129,7 @@ def check_mycheck(item, params, section):
     if not data:
         yield Result(state=State.UNKNOWN, summary="Item not found")
         return
-    
+
     yield from check_levels(
         data["value"],
         levels_upper=params.get("levels_upper"),
@@ -102,6 +151,35 @@ check_plugin_mycheck = CheckPlugin(
     check_default_parameters={"levels_upper": ("fixed", (80.0, 90.0))},
     check_ruleset_name="mycheck",
 )
+
+# Expected output in CheckMK:
+# Service: "My Check item1"
+# Status: OK - Value: 42.50%
+# Perfdata: mymetric=42.5;80.0;90.0
+```
+
+## Testing Commands
+
+Test your plugin after each change:
+
+```bash
+# Service discovery
+cmk -vI --detect-plugins=myplugin hostname
+
+# Execute check
+cmk -v --detect-plugins=myplugin hostname
+
+# Debug mode (shows stack traces)
+cmk --debug --detect-plugins=myplugin hostname
+
+# Show effective parameters per service
+cmk -D hostname
+
+# Restart after ruleset/graphing changes
+omd restart apache
+
+# Restart core after check changes
+cmk -R
 ```
 
 ## Reference Files
@@ -131,44 +209,44 @@ For detailed information, read the appropriate reference file:
 - **MKP Packaging**: `references/mkp_packaging.md` - Creating distributable packages
 - **Man Pages**: `references/checkman_manpages.md` - Check plugin documentation
 - **Migration Guide**: `references/migration_guide.md` - Migrating legacy plugins to current APIs
-- **Best practices**: `references/best_practices.md` - Testing, debugging, migration
+- **Best practices**: `references/best_practices.md` - Testing, debugging, crash analysis
 
-## Templates
+## Templates by Use Case
 
 Ready-to-use templates in `assets/templates/`:
 
-### Basic Plugins
-- `agent_check_simple.py` - Simple agent-based check
-- `agent_check_advanced.py` - Check with items, params, metrics
-- `snmp_check.py` - SNMP-based check plugin (5 examples: scalar, table, metrics, rate calculation, detection patterns)
-- `snmp_check_multitable.py` - Multi-table SNMP check (ifTable + ifXTable correlation, dataclasses, comprehensive interface monitoring)
-- `ruleset.py` - Ruleset definition
-- `graphing.py` - Metrics and perfometer definitions
-- `special_agent.py` - Basic special agent executable
+### First Plugin (Start Here)
+1. `agent_check_simple.py` - Minimal agent-based check
+2. `ruleset.py` - Add configurable parameters
+3. `graphing.py` - Add metrics and perfometers
 
-### Complete Datasource Program (Prism-style)
-- `datasource_complete.py` - Full special agent with piggyback, multiple sections, API client
-- `datasource_server_side_calls.py` - Server-side call configuration
-- `datasource_ruleset.py` - Complete ruleset with check parameters
+### REST API Monitoring (Special Agent)
+1. `datasource_complete.py` - Full special agent with API client
+2. `datasource_server_side_calls.py` - Server-side configuration
+3. `datasource_ruleset.py` - GUI parameters
 
-### Agent Plugins (Host-side)
-- `linux_agent_plugin.py` - Python plugin (mk_docker.py style) with config, sections, piggyback
-- `linux_agent_plugin.sh` - Bash plugin with config support
-- `windows_agent_plugin.ps1` - PowerShell plugin with config, WMI, registry, multiple sections
+### SNMP Monitoring
+1. `snmp_check.py` - 5 examples (scalar, table, metrics, rates, detection)
+2. `snmp_check_multitable.py` - Multi-table correlation (ifTable + ifXTable)
 
-### Local Checks (Simplest Host-side)
-- `local_check.py` - Python cross-platform template with helper functions
-- `local_check_linux.sh` - Bash template with example checks
-- `local_check_windows.ps1` - PowerShell template with Windows-specific checks
+### Network Service Checks (Active Checks)
+1. `active_check_executable.py` - Nagios-compatible executable
+2. `active_check_server_side_calls.py` - ActiveCheckConfig
+3. `active_check_ruleset.py` - Rule specification
 
-### Bakery API (Plugin Distribution)
-- `bakery_plugin.py` - Complete Bakery plugin with files, scriptlets, Windows config
-- `bakery_ruleset.py` - AgentConfig ruleset for Bakery plugin configuration
+### Host-Side Data Collection
+- `linux_agent_plugin.py` - Python plugin with config, sections, piggyback
+- `linux_agent_plugin.sh` - Bash plugin with config
+- `windows_agent_plugin.ps1` - PowerShell with WMI, registry
 
-### Active Checks (Server-Side Network Checks)
-- `active_check_executable.py` - Nagios-compatible check executable with TCP/HTTP examples
-- `active_check_server_side_calls.py` - ActiveCheckConfig mapping config to command line
-- `active_check_ruleset.py` - ActiveCheck ruleset with multiple form examples
+### Simplest Checks (Local Checks)
+- `local_check.py` - Cross-platform Python
+- `local_check_linux.sh` - Bash template
+- `local_check_windows.ps1` - PowerShell template
+
+### Plugin Distribution (Bakery)
+1. `bakery_plugin.py` - Files, scriptlets, Windows config
+2. `bakery_ruleset.py` - AgentConfig ruleset
 
 ## Key Imports by API
 
@@ -205,23 +283,6 @@ from cmk.graphing.v1 import Title
 from cmk.graphing.v1.metrics import Metric, Color, Unit, DecimalNotation
 from cmk.graphing.v1.graphs import Graph, MinimalRange
 from cmk.graphing.v1.perfometers import Perfometer, FocusRange, Closed, Open
-```
-
-## Testing Commands
-
-```bash
-# Service discovery
-cmk -vI --detect-plugins=myplugin hostname
-
-# Execute check
-cmk -v --detect-plugins=myplugin hostname
-
-# Debug mode
-cmk --debug --detect-plugins=myplugin hostname
-
-# Restart after changes
-omd restart apache  # For ruleset/graphing changes
-cmk -R              # For core/check changes
 ```
 
 ## In-CheckMK Documentation

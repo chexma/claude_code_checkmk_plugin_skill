@@ -425,3 +425,14 @@ def check_mycheck(section):
         pprint(section)
     # ...
 ```
+
+---
+
+## Related Topics
+
+- **Add configurable parameters** → `rulesets_api.md`
+- **Add metrics and graphs** → `graphing_api.md`
+- **SNMP-based checks** → `snmp_api.md`
+- **Auto-assign host labels** → `host_labels.md`
+- **Testing and debugging** → `best_practices.md`
+- **Package for distribution** → `mkp_packaging.md`

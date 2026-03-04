@@ -1,11 +1,20 @@
 ---
 name: checkmk-plugin-dev
 description: >
-  This skill should be used when the user asks to "create a CheckMK plugin",
-  "build a check plugin", "write an SNMP check", "create a special agent",
-  "add metrics to a check", "create a ruleset", "package an MKP",
-  "migrate a legacy plugin", or mentions CheckMK 2.4 plugin development,
-  agent-based checks, rulesets API, graphing API, or bakery API.
+  Comprehensive guidance for developing CheckMK 2.4 monitoring plugins
+  using current APIs including agent-based checks, SNMP, special agents,
+  active checks, rulesets, graphing, and bakery packaging. Provides
+  decision trees, templates, and API references for the full plugin
+  lifecycle. Use when user asks to "create a CheckMK plugin", "build a
+  check plugin", "write an SNMP check", "create a special agent", "add
+  metrics to a check", "create a ruleset", "package an MKP", "migrate a
+  legacy plugin", or mentions CheckMK 2.4 plugin development. Do NOT use
+  for CheckMK GUI configuration, user management, or general
+  Linux/Nagios monitoring questions.
+compatibility: Requires CheckMK 2.4+ environment. Claude Code recommended.
+metadata:
+  author: andre
+  version: 1.0.0
 ---
 
 # CheckMK 2.4 Plugin Development
@@ -191,6 +200,16 @@ render.datetime(ts)       # "Jan 01 2024, 12:00:00"
 yield Result(state=State.OK, summary="Status text")
 yield Result(state=State.WARN, summary="Warning", details="Extended info")
 ```
+
+## Troubleshooting
+
+See `references/best_practices.md` for debugging, crash analysis, and common errors.
+
+Quick fixes:
+- **Plugin not discovered**: Check variable naming prefixes (see Variable Naming above)
+- **TypeError in check function**: Verify `check_levels()` format (see check_levels() Format above)
+- **Ruleset not visible**: Run `omd restart apache` after changes
+- **Import errors**: Ensure correct API version imports (`cmk.agent_based.v2`, not `.v1`)
 
 ## In-CheckMK Documentation
 

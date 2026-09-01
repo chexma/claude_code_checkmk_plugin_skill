@@ -1,6 +1,8 @@
 # CheckMK API Ecosystem Overview
 
-## Available APIs in CheckMK 2.4
+## Available APIs (CheckMK 2.4 and 2.5)
+
+Unless noted otherwise, these are identical in 2.4 and 2.5:
 
 | API | Purpose | Location |
 |-----|---------|----------|
@@ -9,10 +11,19 @@
 | **Rulesets API V1** | Rule configuration forms | `cmk.rulesets.v1` |
 | **Graphing API V1** | Metrics, graphs, perfometers | `cmk.graphing.v1` |
 | **Server-side Calls API** | Special agents & active checks | `cmk.server_side_calls.v1` |
-| **Bakery API** | Agent bakery integration | `cmk.base.cee.plugins.bakery` |
-| **HW/SW Inventory API** | Hardware/Software inventory | Web API |
+| **Bakery API v1** | Agent bakery integration (stable, 2.3–2.4+) | `cmk.base.plugins.bakery.bakery_api.v1` |
+| **HW/SW Inventory API** | Hardware/Software inventory (collection) | `cmk.agent_based.v2` (`InventoryPlugin`) |
 | **Livestatus** | Real-time status queries | Unix socket / TCP |
 | **Local Checks** | Simple script-based checks | Agent output format |
+
+### New in CheckMK 2.5 (all unstable — see `SKILL.md` version note)
+
+| API | Purpose | Location |
+|-----|---------|----------|
+| **Bakery API v2** | Agent bakery integration, new plugin family layout | `cmk.bakery.v2_unstable` |
+| **Password Store API** | Read stored secrets in server-side programs | `cmk.password_store.v1_unstable` |
+| **Server-Side Programs API** | Crash reports, call-to-call persistence, TLS helpers | `cmk.server_side_programs.v1_unstable` |
+| **Inventory UI API** | Custom HW/SW inventory tree visualizations | `cmk.inventory_ui.v1_unstable` |
 
 ## In-Checkmk Resources
 
@@ -37,7 +48,7 @@ https://<server>/<site>/check_mk/api/1.0/ui/swagger-ui/
 
 ## Plugin Development File Locations
 
-### CheckMK 2.4 Directory Structure
+### Directory Structure (2.4 & 2.5, unchanged)
 ```
 ~/local/lib/python3/cmk_addons/plugins/<family>/
 ├── agent_based/        # Check plugins (Check API V2)

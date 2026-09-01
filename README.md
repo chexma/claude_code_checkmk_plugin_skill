@@ -1,6 +1,6 @@
 # CheckMK Plugin Development Skill for Claude Code
 
-A comprehensive Claude Code skill for developing CheckMK 2.4 monitoring plugins. This skill provides detailed API documentation, ready-to-use templates, and best practices for all CheckMK extension types.
+A comprehensive Claude Code skill for developing CheckMK monitoring plugins for **both 2.4 and 2.5**. This skill provides detailed API documentation, ready-to-use templates, and best practices for all CheckMK extension types. The core APIs are identical across 2.4 and 2.5; the Bakery API and three new 2.5-only unstable APIs (password store, server-side programs, inventory UI) are explicitly version-tagged — see `checkmk-plugin-dev/SKILL.md`'s version note.
 
 ## What This Skill Does
 
@@ -27,12 +27,12 @@ Personal skills in:
 
 ## Skill Contents
 
-### Reference Documentation (17 files)
+### Reference Documentation (22 files)
 
 | File | Description |
 |------|-------------|
 | `development_overview.md` | Decision tree for choosing extension type |
-| `api_overview.md` | Complete API ecosystem and imports |
+| `api_overview.md` | Complete API ecosystem and imports (2.4 & 2.5) |
 | `agent_based_api.md` | Check API V2 for agent-based plugins |
 | `snmp_api.md` | SNMP detection and OID handling |
 | `rulesets_api.md` | Form specs and rule definitions |
@@ -41,15 +41,18 @@ Personal skills in:
 | `active_checks.md` | Server-side network service checks |
 | `piggyback_api.md` | Multi-host monitoring |
 | `inventory_api.md` | HW/SW inventory collection |
+| `inventory_ui_api.md` | **2.5+ unstable**: custom inventory tree visualizations |
 | `agent_plugins.md` | Host-side scripts with server evaluation |
 | `local_checks.md` | Simplest host-side scripts |
 | `spool_directory.md` | External program output |
-| `bakery_api.md` | Agent Bakery distribution |
+| `bakery_api.md` | Agent Bakery distribution (v1 stable + v2_unstable for 2.5) |
+| `password_store_api.md` | **2.5+ unstable**: reading stored secrets |
+| `server_side_programs_api.md` | **2.5+ unstable**: crash reports, persistence helpers |
 | `mkp_packaging.md` | Extension packaging |
 | `migration_guide.md` | Migrating legacy plugins to current APIs |
 | `best_practices.md` | Testing, debugging, migration |
 
-### Templates (17 files)
+### Templates (22 files)
 
 **Basic Plugins**
 - `agent_check_simple.py` - Minimal agent-based check
@@ -76,7 +79,8 @@ Personal skills in:
 - `local_check_windows.ps1` - PowerShell template
 
 **Bakery & Active Checks**
-- `bakery_plugin.py` - Bakery plugin with scriptlets
+- `bakery_plugin.py` - Bakery plugin with scriptlets (v1, stable, 2.3–2.4+)
+- `bakery_plugin_v2.py` - Bakery plugin, v2_unstable (CheckMK 2.5+)
 - `bakery_ruleset.py` - AgentConfig ruleset
 - `active_check_executable.py` - Nagios-compatible executable
 - `active_check_server_side_calls.py` - ActiveCheckConfig

@@ -648,3 +648,8 @@ cmk -vI --detect-plugins=myagent myhost --debug
 7. **String conversion**: All command arguments must be strings
 8. **Error handling**: Write errors to stderr, exit with non-zero code
 9. **Restart Apache** after ruleset changes: `omd restart apache`
+
+## Related Topics (CheckMK 2.5+)
+
+- **Reading stored secrets from within the executable** → `password_store_api.md` (`v1_unstable`)
+- **Crash reports and persistent state between runs** → `server_side_programs_api.md` (`v1_unstable`)

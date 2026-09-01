@@ -4,6 +4,28 @@ The Bakery API (commercial editions) allows packaging agent plugins for automati
 
 > **Note**: Since CheckMK 2.3.0, the Bakery API exists in all editions. On CheckMK Raw, the functionality is simply ignored.
 
+## Which Version?
+
+Two Bakery API versions exist side by side:
+
+| | Version 1 | Version 2 |
+|---|---|---|
+| Import | `cmk.base.plugins.bakery.bakery_api.v1` (as `.bakery_api.v1` relative import) | `cmk.bakery.v2_unstable` |
+| CheckMK version | 2.3–2.4+ (also works on 2.5) | 2.5+ only |
+| Stability | Stable | **Unstable** — API may change before it stabilizes in 2.6 (per Werk #18600); not recommended for production yet |
+| Registration | `register.bakery_plugin(...)` call at import time | `BakeryPlugin` instance, name must start with `bakery_plugin_` — discovered by the backend, not registered at import |
+| `source` path for `Plugin`/`SystemBinary` | Relative to the general agent source directory | Relative to the plugin family's `cmk.plugins.<FAMILY>.agent` or `cmk_addons.plugins.<FAMILY>.agent` directory |
+| Secrets | No dedicated abstraction | `Secret` class instances passed to plugin functions instead of raw password-store access |
+| Parameter validation | Runtime dict access (`conf.get(...)`) | Optional `parameter_parser` callable — favors type annotations over runtime validation |
+
+**Recommendation**: for CheckMK 2.4, use v1. For CheckMK 2.5, use v1 unless you specifically need the new plugin family layout or `Secret` handling — v2_unstable can change before 2.6. Tell the user this trade-off explicitly if they're targeting 2.5.
+
+Template: `assets/templates/bakery_plugin.py` (v1) / `assets/templates/bakery_plugin_v2.py` (v2_unstable).
+
+---
+
+## Version 1 (Stable — CheckMK 2.3–2.4+)
+
 ## Use Cases
 
 - Distribute agent plugins to specific hosts via rules
@@ -671,6 +693,111 @@ tar -tvf ~/var/check_mk/agents/linux/check-mk-agent_*.deb
 # Check agent package logs
 tail -f ~/var/log/agent-bakery.log
 ```
+
+---
+
+## Version 2 (Unstable — CheckMK 2.5+)
+
+> **Unstable API**: `cmk.bakery.v2_unstable` may change without notice before it stabilizes (planned for 2.6, per Werk #18600). Use v1 above for production plugins unless you specifically need what's described here.
+
+### Key Differences from v1
+
+1. **Discovery instead of registration**: plugins are no longer registered by calling a function at import time. Instead you create a `BakeryPlugin` instance in a module-level variable whose name starts with `bakery_plugin_`; the backend discovers it later — the same pattern already used by `check_plugin_`, `rule_spec_`, etc.
+2. **New plugin family layout**: `source` paths for `Plugin` and `SystemBinary` are relative to `cmk.plugins.<FAMILY>.agent` or `cmk_addons.plugins.<FAMILY>.agent`, not the general agent source directory used in v1.
+3. **`Secret` instead of raw password-store access**: functions that need a configured secret receive `Secret` instances directly (with `.revealed`, `.source`, `.id`) instead of reaching into the password store themselves.
+4. **`parameter_parser`**: an optional callable that validates/transforms the ruleset configuration, favoring type annotations over ad-hoc runtime checks. Use `no_op_parser` for the pass-through case (equivalent to just using the dict as-is).
+
+### Imports
+
+```python
+from cmk.bakery.v2_unstable import (
+    # Operating systems
+    OS,
+    # Package scriptlet steps
+    DebStep,
+    RpmStep,
+    SolStep,
+    # Artifact classes
+    Plugin,
+    PluginConfig,
+    SystemBinary,
+    Scriptlet,
+    WindowsConfigEntry,
+    WindowsConfigItems,
+    WindowsGlobalConfigEntry,
+    WindowsSystemConfigEntry,
+    # Secrets
+    Secret,
+    # Plugin definition
+    BakeryPlugin,
+    # Type annotations
+    FileGenerator,
+    ScriptletGenerator,
+    WindowsConfigGenerator,
+    # Parameter parsing
+    no_op_parser,
+    # Discovery helper
+    entry_point_prefixes,
+)
+```
+
+### Minimal Example
+
+```python
+#!/usr/bin/env python3
+"""Bakery plugin, v2_unstable (CheckMK 2.5+)."""
+from pathlib import Path
+from cmk.bakery.v2_unstable import (
+    OS, Plugin, BakeryPlugin, FileGenerator, no_op_parser,
+)
+
+
+def get_hello_world_files(conf: dict) -> FileGenerator:
+    yield Plugin(base_os=OS.LINUX, source=Path("hello_world"))
+    yield Plugin(base_os=OS.WINDOWS, source=Path("hello_world.ps1"))
+
+
+bakery_plugin_hello_world = BakeryPlugin(
+    name="hello_world",
+    parameter_parser=no_op_parser,
+    files_function=get_hello_world_files,
+)
+```
+
+### Working with Secrets
+
+```python
+def get_files(conf: dict) -> FileGenerator:
+    secret: Secret = conf["api_token"]  # Provided as a Secret, not a raw string
+    yield PluginConfig(
+        base_os=OS.LINUX,
+        lines=[f"API_TOKEN={secret.revealed}"],
+        target=Path("my_plugin.cfg"),
+    )
+```
+
+### File Locations (v2_unstable)
+
+Plugin family layout mirrors the other 2.5 plugin types:
+
+```
+~/local/lib/python3/cmk_addons/plugins/<family>/
+├── bakery/
+│   └── my_plugin.py          # BakeryPlugin definition
+├── agent/                    # Agent plugin sources (Unix + Windows)
+│   ├── my_plugin
+│   └── my_plugin.ps1
+└── rulesets/
+    └── agent_config.py       # AgentConfig ruleset (unchanged, cmk.rulesets.v1)
+```
+
+### Migrating a v1 Plugin to v2_unstable
+
+1. Change the import from `.bakery_api.v1` to `cmk.bakery.v2_unstable`.
+2. Replace the trailing `register.bakery_plugin(name=..., files_function=..., ...)` call with a module-level `bakery_plugin_<name> = BakeryPlugin(name=..., parameter_parser=no_op_parser, files_function=..., ...)`.
+3. Move agent plugin source files into the family's `agent/` directory.
+4. If the plugin reads secrets, change the ruleset/config wiring so the function receives `Secret` objects and use `.revealed` instead of manual password-store lookups.
+5. Test with a real bake — v2_unstable is new enough that behavior should be verified, not assumed.
 
 ---
 

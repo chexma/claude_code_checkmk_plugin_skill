@@ -1,25 +1,41 @@
 ---
 name: checkmk-plugin-dev
 description: >
-  Comprehensive guidance for developing CheckMK 2.4 monitoring plugins
-  using current APIs including agent-based checks, SNMP, special agents,
-  active checks, rulesets, graphing, and bakery packaging. Provides
-  decision trees, templates, and API references for the full plugin
-  lifecycle. Use when user asks to "create a CheckMK plugin", "build a
-  check plugin", "write an SNMP check", "create a special agent", "add
-  metrics to a check", "create a ruleset", "package an MKP", "migrate a
-  legacy plugin", or mentions CheckMK 2.4 plugin development. Do NOT use
-  for CheckMK GUI configuration, user management, or general
-  Linux/Nagios monitoring questions.
+  Comprehensive guidance for developing CheckMK monitoring plugins for
+  both 2.4 and 2.5 using current APIs including agent-based checks, SNMP,
+  special agents, active checks, rulesets, graphing, and bakery
+  packaging. Provides decision trees, templates, and API references for
+  the full plugin lifecycle, with explicit version tagging wherever 2.4
+  and 2.5 diverge (bakery API, and the new 2.5 unstable password_store /
+  server_side_programs / inventory_ui APIs). Use when user asks to
+  "create a CheckMK plugin", "build a check plugin", "write an SNMP
+  check", "create a special agent", "add metrics to a check", "create a
+  ruleset", "package an MKP", "migrate a legacy plugin", or mentions
+  CheckMK 2.4 or 2.5 plugin development. Do NOT use for CheckMK GUI
+  configuration, user management, or general Linux/Nagios monitoring
+  questions.
 compatibility: Requires CheckMK 2.4+ environment. Claude Code recommended.
 metadata:
   author: andre
-  version: 1.0.0
+  version: 2.0.0
 ---
 
-# CheckMK 2.4 Plugin Development
+# CheckMK Plugin Development (2.4 & 2.5)
 
-Comprehensive guidance for developing CheckMK 2.4 monitoring plugins using current APIs.
+Comprehensive guidance for developing CheckMK monitoring plugins using current APIs.
+
+## Which CheckMK Version?
+
+The core APIs (Check API V2, Rulesets API V1, Graphing API V1, Server-Side Calls V1) are **identical** in 2.4 and 2.5 — nearly all reference files and templates below work unchanged for either version. Only ask about the target version when the task touches one of these:
+
+| Area | 2.4 (and 2.5 default) | 2.5+ only |
+|---|---|---|
+| Agent Bakery | `bakery_api.md` → Version 1 (`cmk.base.plugins.bakery.bakery_api.v1`, stable) | `bakery_api.md` → Version 2 (`cmk.bakery.v2_unstable`) |
+| Reading stored secrets in server-side programs | — (use `Password` form spec + `.unsafe()`) | `references/password_store_api.md` (`v1_unstable`) |
+| Crash reports / call-to-call persistence for special agents | — | `references/server_side_programs_api.md` (`v1_unstable`) |
+| Custom HW/SW inventory tree visualizations | — | `references/inventory_ui_api.md` (`v1_unstable`) |
+
+The three 2.5-only APIs are marked `unstable` upstream (stabilizes in 2.6, legacy removed in 2.7 per Werk #18600) — mention this to the user before recommending them for production use.
 
 ## Choose Your Path
 
@@ -32,11 +48,13 @@ Comprehensive guidance for developing CheckMK 2.4 monitoring plugins using curre
 | Run scripts on monitored hosts | `references/agent_plugins.md` | `linux_agent_plugin.py` |
 | Create simplest host-side check | `references/local_checks.md` | `local_check.py` |
 | Monitor VMs/containers | `references/piggyback_api.md` | `datasource_complete.py` |
-| Distribute plugins via Agent Bakery | `references/bakery_api.md` | `bakery_plugin.py` |
+| Distribute plugins via Agent Bakery | `references/bakery_api.md` | `bakery_plugin.py` (v1) / `bakery_plugin_v2.py` (2.5 unstable) |
 | Package for distribution | `references/mkp_packaging.md` | - |
 | Migrate existing Nagios plugin | `references/migration_guide.md` | - |
 
 ## Core APIs
+
+Shared by 2.4 and 2.5 (unchanged):
 
 | API | Import | Purpose |
 |-----|--------|---------|
@@ -44,6 +62,16 @@ Comprehensive guidance for developing CheckMK 2.4 monitoring plugins using curre
 | Rulesets API V1 | `cmk.rulesets.v1` | Rule configuration forms |
 | Graphing API V1 | `cmk.graphing.v1` | Metrics, graphs, perfometers |
 | Server-Side Calls | `cmk.server_side_calls.v1` | Special agents and active checks |
+
+Version-specific:
+
+| API | Import | Version | Purpose |
+|-----|--------|---------|---------|
+| Bakery API v1 | `cmk.base.plugins.bakery.bakery_api.v1` | 2.3–2.4+ (stable) | Agent Bakery distribution |
+| Bakery API v2 | `cmk.bakery.v2_unstable` | 2.5+ (unstable) | Agent Bakery distribution, new layout |
+| Password Store | `cmk.password_store.v1_unstable` | 2.5+ (unstable) | Read stored secrets in server-side programs |
+| Server-Side Programs | `cmk.server_side_programs.v1_unstable` | 2.5+ (unstable) | Crash reports, call-to-call persistence |
+| Inventory UI | `cmk.inventory_ui.v1_unstable` | 2.5+ (unstable) | Custom HW/SW inventory visualizations |
 
 ## Directory Structure
 
@@ -149,11 +177,14 @@ omd restart apache                             # After ruleset/graphing changes
 
 ### Advanced Topics
 - `references/piggyback_api.md` - Multi-host data (VMs, containers)
-- `references/bakery_api.md` - Agent Bakery distribution
+- `references/bakery_api.md` - Agent Bakery distribution (v1 stable + v2_unstable for 2.5)
 - `references/active_checks.md` - Network service checks
 - `references/agent_plugins.md` - Host-side scripts
 - `references/local_checks.md` - Simplest host-side checks
-- `references/inventory_api.md` - HW/SW inventory
+- `references/inventory_api.md` - HW/SW inventory collection (agent_based side)
+- `references/inventory_ui_api.md` - **2.5+ unstable**: custom inventory tree visualizations
+- `references/password_store_api.md` - **2.5+ unstable**: reading stored secrets
+- `references/server_side_programs_api.md` - **2.5+ unstable**: crash reports, persistence helpers
 - `references/host_labels.md` - Auto-assign labels
 - `references/mkp_packaging.md` - Package distribution
 - `references/migration_guide.md` - Legacy plugin migration
@@ -183,7 +214,7 @@ Ready-to-use templates in `assets/templates/`:
 `local_check.py`, `local_check_linux.sh`, `local_check_windows.ps1`
 
 ### Bakery Distribution
-1. `bakery_plugin.py` → 2. `bakery_ruleset.py`
+1. `bakery_plugin.py` (v1, stable, 2.3–2.4+) or `bakery_plugin_v2.py` (v2_unstable, 2.5+) → 2. `bakery_ruleset.py`
 
 ## Common Patterns
 

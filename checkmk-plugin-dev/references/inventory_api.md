@@ -394,3 +394,7 @@ Options:
 3. **Meaningful status columns**: Only track what's important
 4. **Performance**: Inventory runs less frequently than checks
 5. **Documentation**: Document inventory paths
+
+## Related Topics (CheckMK 2.5+)
+
+- **Customizing how a tree node renders in the GUI** → `inventory_ui_api.md` (`v1_unstable`) — this file covers collecting the data (unchanged in 2.5); that one covers display

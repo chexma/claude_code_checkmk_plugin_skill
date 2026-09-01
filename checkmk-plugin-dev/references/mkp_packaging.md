@@ -114,7 +114,7 @@ mkp remove <name> <version>
 mkp release <name>
 ```
 
-## Directory Structure (CheckMK 2.4)
+## Directory Structure (2.4 & 2.5, unchanged)
 
 ```
 ~/local/lib/python3/cmk_addons/plugins/<family>/

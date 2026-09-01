@@ -4,15 +4,31 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Repository Purpose
 
-Claude Code skill for CheckMK 2.4 plugin development. Provides documentation and templates for creating monitoring plugins.
+Claude Code skill for CheckMK plugin development, covering **both 2.4 and 2.5**. Provides documentation and templates for creating monitoring plugins.
+
+## Version Policy (2.4 vs 2.5)
+
+The core plugin APIs (`cmk.agent_based.v2`, `cmk.rulesets.v1`, `cmk.graphing.v1`, `cmk.server_side_calls.v1`) are **identical** between CheckMK 2.4 and 2.5 — most reference files apply to both versions without changes.
+
+Two areas differ and are explicitly version-tagged:
+
+1. **Bakery API** (`references/bakery_api.md`) has two versions living side by side:
+   - `cmk.base.plugins.bakery.bakery_api.v1` — stable, use for CheckMK 2.3–2.4 and for 2.5 unless you need the new features.
+   - `cmk.bakery.v2_unstable` — CheckMK 2.5+, new plugin family layout, `BakeryPlugin` class instead of `register.bakery_plugin()`, `Secret` objects instead of raw password-store access. Marked unstable until it stabilizes in 2.6.
+2. **Three brand-new 2.5-only unstable APIs** with no 2.4 equivalent — each has its own reference file, clearly marked "2.5+, unstable":
+   - `references/password_store_api.md` — `cmk.password_store.v1_unstable`
+   - `references/server_side_programs_api.md` — `cmk.server_side_programs.v1_unstable`
+   - `references/inventory_ui_api.md` — `cmk.inventory_ui.v1_unstable`
+
+Migration timeline per Werk #18600: unstable in 2.5 → stabilized (renamed) in 2.6 → legacy APIs removed in 2.7. When writing new plugin code, ask which CheckMK version the user targets before choosing between stable v1 and unstable v2/new APIs — see `SKILL.md`'s version note.
 
 ## Structure
 
 ```
 checkmk-plugin-dev/
 ├── SKILL.md              # Main skill entry point
-├── references/           # Detailed API documentation (17 files)
-└── assets/templates/     # Ready-to-use plugin templates (17 files)
+├── references/           # Detailed API documentation (22 files)
+└── assets/templates/     # Ready-to-use plugin templates (22 files)
 ```
 
 ## Key Files
@@ -21,6 +37,7 @@ checkmk-plugin-dev/
 - **references/agent_based_api.md**: Check API V2, check_levels format, TypedDict patterns
 - **references/rulesets_api.md**: Form specs, factory functions
 - **references/graphing_api.md**: Metrics, graphs, perfometers
+- **references/bakery_api.md**: Bakery v1 (stable) vs v2_unstable (2.5+) side by side
 - **references/best_practices.md**: Testing, debugging, crash analysis
 
 ## Plugin Directory Structure

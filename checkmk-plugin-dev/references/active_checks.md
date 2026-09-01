@@ -52,7 +52,7 @@ Active Checks are programs executed by the CheckMK server to monitor network ser
                                           └──────────────┘
 ```
 
-## File Locations (CheckMK 2.4)
+## File Locations (2.4 & 2.5, unchanged)
 
 ```
 ~/local/lib/python3/cmk_addons/plugins/<family>/
@@ -656,3 +656,8 @@ cmk -N myhost | grep check_mycheck
 | `~/local/lib/python3/cmk_addons/plugins/<family>/libexec/` | Custom executables (alternative) |
 | `~/local/lib/python3/cmk_addons/plugins/<family>/server_side_calls/` | ActiveCheckConfig |
 | `~/local/lib/python3/cmk_addons/plugins/<family>/rulesets/` | ActiveCheck rulesets |
+
+## Related Topics (CheckMK 2.5+)
+
+- **Reading stored secrets from within the executable** → `password_store_api.md` (`v1_unstable`)
+- **Crash reports and persistent state for the executable** → `server_side_programs_api.md` (`v1_unstable`)

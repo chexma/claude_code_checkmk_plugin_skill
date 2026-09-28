@@ -1,5 +1,17 @@
 # CheckMK API Ecosystem Overview
 
+## Contents
+
+- [Available APIs (CheckMK 2.4 and 2.5)](#available-apis-checkmk-24-and-25)
+- [In-Checkmk Resources](#in-checkmk-resources)
+- [API Documentation URLs (in CheckMK)](#api-documentation-urls-in-checkmk)
+- [Plugin Development File Locations](#plugin-development-file-locations)
+- [API Import Cheat Sheet](#api-import-cheat-sheet)
+- [Variable Naming Prefixes and Development Workflow](#variable-naming-prefixes-and-development-workflow)
+- [External Resources](#external-resources)
+- [Livestatus Quick Reference](#livestatus-quick-reference)
+- [Local Checks (Simple Alternative)](#local-checks-simple-alternative)
+
 ## Available APIs (CheckMK 2.4 and 2.5)
 
 Unless noted otherwise, these are identical in 2.4 and 2.5:
@@ -11,7 +23,7 @@ Unless noted otherwise, these are identical in 2.4 and 2.5:
 | **Rulesets API V1** | Rule configuration forms | `cmk.rulesets.v1` |
 | **Graphing API V1** | Metrics, graphs, perfometers | `cmk.graphing.v1` |
 | **Server-side Calls API** | Special agents & active checks | `cmk.server_side_calls.v1` |
-| **Bakery API v1** | Agent bakery integration (stable, 2.3–2.4+) | `cmk.base.plugins.bakery.bakery_api.v1` |
+| **Bakery API v1** | Agent bakery integration (stable, 2.3+ incl. 2.5) | `cmk.base.plugins.bakery.bakery_api.v1` |
 | **HW/SW Inventory API** | Hardware/Software inventory (collection) | `cmk.agent_based.v2` (`InventoryPlugin`) |
 | **Livestatus** | Real-time status queries | Unix socket / TCP |
 | **Local Checks** | Simple script-based checks | Agent output format |

@@ -1,5 +1,18 @@
 # CheckMK Plugin Development Best Practices
 
+## Contents
+
+- [Naming Conventions](#naming-conventions)
+- [Common Gotchas](#common-gotchas)
+- [Parse Function Best Practices](#parse-function-best-practices)
+- [Check Function Best Practices](#check-function-best-practices)
+- [Default Parameters](#default-parameters)
+- [Testing Workflow](#testing-workflow)
+- [Error Handling](#error-handling)
+- [Performance Considerations](#performance-considerations)
+- [Migration from API V1 to V2](#migration-from-api-v1-to-v2)
+- [Packaging as MKP](#packaging-as-mkp)
+
 ## Naming Conventions
 
 ### Plugin Names

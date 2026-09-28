@@ -4,6 +4,24 @@ The Bakery API (commercial editions) allows packaging agent plugins for automati
 
 > **Note**: Since CheckMK 2.3.0, the Bakery API exists in all editions. On CheckMK Raw, the functionality is simply ignored.
 
+## Contents
+
+- [Which Version?](#which-version)
+- [Version 1 (Stable — CheckMK 2.3+, also 2.5)](#version-1-stable--checkmk-23-also-25)
+- [Use Cases](#use-cases)
+- [Scope and Limitations](#scope-and-limitations)
+- [Directory Structure](#directory-structure)
+- [Complete Example](#complete-example)
+- [API Reference](#api-reference)
+- [File Locations](#file-locations)
+- [Minimal Example (Distribution Only)](#minimal-example-distribution-only)
+- [MKP Package Structure](#mkp-package-structure)
+- [Windows Configuration](#windows-configuration)
+- [Best Practices](#best-practices)
+- [Debugging](#debugging)
+- [Version 2 (Unstable — CheckMK 2.5+)](#version-2-unstable--checkmk-25)
+- [Related Topics](#related-topics)
+
 ## Which Version?
 
 Two Bakery API versions exist side by side:
@@ -11,7 +29,7 @@ Two Bakery API versions exist side by side:
 | | Version 1 | Version 2 |
 |---|---|---|
 | Import | `cmk.base.plugins.bakery.bakery_api.v1` (as `.bakery_api.v1` relative import) | `cmk.bakery.v2_unstable` |
-| CheckMK version | 2.3–2.4+ (also works on 2.5) | 2.5+ only |
+| CheckMK version | 2.3+ (also 2.5) | 2.5+ only |
 | Stability | Stable (deprecated in the next major release, see `SKILL.md` → *Stability and timeline*) | **Unstable** — may still change; not recommended for production yet |
 | Registration | `register.bakery_plugin(...)` call at import time | `BakeryPlugin` instance, name must start with `bakery_plugin_` — discovered by the backend, not registered at import |
 | `source` path for `Plugin`/`SystemBinary` | Relative to `~/local/share/check_mk/agents/` (`Plugin`: its `plugins/` subdir; Windows: `windows/plugins/`) | Relative to the plugin family's `agents/` directory (`cmk_addons/plugins/<FAMILY>/agents/`) |
@@ -28,7 +46,7 @@ Template: `assets/templates/bakery_plugin.py` (v1) / `assets/templates/bakery_pl
 
 ---
 
-## Version 1 (Stable — CheckMK 2.3–2.4+)
+## Version 1 (Stable — CheckMK 2.3+, also 2.5)
 
 ## Use Cases
 

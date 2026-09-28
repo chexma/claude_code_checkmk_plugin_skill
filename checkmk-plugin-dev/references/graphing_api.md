@@ -1,5 +1,22 @@
 # Graphing API V1 Reference
 
+## Contents
+
+- [Location](#location)
+- [Complete Import Statement](#complete-import-statement)
+- [Metric Definition](#metric-definition)
+- [Unit Notations](#unit-notations)
+- [Color Options](#color-options)
+- [Graph Definition](#graph-definition)
+- [Perfometer Definition](#perfometer-definition)
+- [Metric Translation](#metric-translation)
+- [Complete Example](#complete-example)
+- [Restart Requirements](#restart-requirements)
+- [Connecting Metrics from Check Plugin](#connecting-metrics-from-check-plugin)
+- [Default Behavior Without Graphing Definition](#default-behavior-without-graphing-definition)
+- [Changes in 2.5](#changes-in-25)
+- [Related Topics](#related-topics)
+
 ## Location
 `~/local/lib/python3/cmk_addons/plugins/<family>/graphing/`
 

@@ -20,7 +20,7 @@ metadata:
 
 # CheckMK Plugin Development (2.4 & 2.5)
 
-Comprehensive guidance for developing CheckMK monitoring plugins using current APIs.
+Scope: code that extends CheckMK (check plugins, rulesets, graphing, special agents, active checks, agent and bakery plugins, MKPs) and scripts against its REST API. Not GUI administration.
 
 ## Which CheckMK Version?
 
@@ -244,7 +244,7 @@ Next step: `agent_check_advanced.py` (items, check parameters, metrics)
 `local_check.py`, `local_check_linux.sh`, `local_check_windows.ps1`
 
 ### Bakery Distribution
-1. `bakery_plugin.py` (v1, stable, 2.3–2.4+) or `bakery_plugin_v2.py` (v2_unstable, 2.5+) → 2. `bakery_ruleset.py`
+1. `bakery_plugin.py` (v1, stable, 2.3+ incl. 2.5) or `bakery_plugin_v2.py` (v2_unstable, 2.5+) → 2. `bakery_ruleset.py`
 
 ## Common Patterns
 

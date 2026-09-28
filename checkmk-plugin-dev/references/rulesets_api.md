@@ -1,5 +1,19 @@
 # Rulesets API V1 Reference
 
+## Contents
+
+- [Location](#location)
+- [Complete Import Statement](#complete-import-statement)
+- [Rule Specification Types](#rule-specification-types)
+- [Form Specification Elements](#form-specification-elements)
+- [Complete Ruleset Example](#complete-ruleset-example)
+- [Accessing Parameters in Check Function](#accessing-parameters-in-check-function)
+- [Restart Requirements](#restart-requirements)
+- [Linking Check Plugin to Ruleset](#linking-check-plugin-to-ruleset)
+- [Factory Functions for DRY Rulesets](#factory-functions-for-dry-rulesets)
+- [Changes in 2.5](#changes-in-25)
+- [Related Topics](#related-topics)
+
 ## Location
 `~/local/lib/python3/cmk_addons/plugins/<family>/rulesets/`
 

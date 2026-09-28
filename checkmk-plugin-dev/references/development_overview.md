@@ -1,5 +1,17 @@
 # CheckMK Extension Development Overview
 
+## Contents
+
+- [When to Extend CheckMK](#when-to-extend-checkmk)
+- [Extension Types Comparison](#extension-types-comparison)
+- [Decision Tree](#decision-tree)
+- [Extension Types in Detail](#extension-types-in-detail)
+- [Additional Mechanisms](#additional-mechanisms)
+- [Choosing the Right Approach](#choosing-the-right-approach)
+- [Development Effort Comparison](#development-effort-comparison)
+- [Getting Started](#getting-started)
+- [Contributing to CheckMK](#contributing-to-checkmk)
+
 ## When to Extend CheckMK
 
 CheckMK provides over 2000 ready-made check plugins, but you may need custom extensions when:
@@ -248,6 +260,25 @@ active_check_mycheck = ActiveCheckConfig(
 - Must handle network connectivity
 
 **Best for**: HTTP/HTTPS checks, TCP port monitoring, SSL certificate validation, DNS resolution, mail server checks
+
+### 5. Agent Bakery Plugins (Distribution)
+
+**What**: Not a data source of its own. A bakery plugin packs an agent plugin (from type 2) and its configuration into the agent packages that the Agent Bakery builds. Commercial editions only.
+
+**Three components**:
+1. **Agent plugin file**: the script that runs on the host
+2. **Bakery plugin**: decides which files, config and install scriptlets go into the package
+3. **Ruleset**: `AgentConfig` rule spec that configures the plugin per host
+
+**Pros**:
+- Rolls agent plugins out to many hosts, with per-host configuration
+- Works with automatic agent updates
+
+**Cons**:
+- Commercial editions only
+- Two API versions: v1 (stable, 2.4 and 2.5) and v2_unstable (2.5+)
+
+**Best for**: Agent plugins that need to be deployed to, or configured on, many hosts. Details: `bakery_api.md`.
 
 ### 6. SNMP Check Plugins
 

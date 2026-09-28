@@ -1,5 +1,16 @@
 # CheckMK Host Labels - Developer Reference
 
+## Contents
+
+- [Overview](#overview)
+- [API](#api)
+- [Implementation Patterns](#implementation-patterns)
+- [Label Naming Conventions](#label-naming-conventions)
+- [Testing](#testing)
+- [Common Use Cases](#common-use-cases)
+- [Usage in CheckMK](#usage-in-checkmk)
+- [Important Notes](#important-notes)
+
 ## Overview
 
 Host labels enable automatic classification of hosts based on data collected by Special Agents or Check Plugins. Labels are detected during service discovery and assigned to the host.

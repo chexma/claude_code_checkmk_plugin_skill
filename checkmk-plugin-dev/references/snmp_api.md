@@ -1,5 +1,24 @@
 # SNMP-Based Check Plugin API Reference
 
+## Contents
+
+- [How SNMP Plugins Differ from Agent-Based](#how-snmp-plugins-differ-from-agent-based)
+- [Development Workflow](#development-workflow)
+- [Location](#location)
+- [Complete Import Statement](#complete-import-statement)
+- [Finding OIDs](#finding-oids)
+- [SimpleSNMPSection Class](#simplesnmpsection-class)
+- [SNMPSection Class](#snmpsection-class)
+- [SNMPTree Class](#snmptree-class)
+- [SNMP Detection Functions](#snmp-detection-functions)
+- [Parse Function for SNMP](#parse-function-for-snmp)
+- [Common OIDs Reference](#common-oids-reference)
+- [Complete SNMP Plugin Example](#complete-snmp-plugin-example)
+- [Testing SNMP Plugins](#testing-snmp-plugins)
+- [MIB Installation](#mib-installation)
+- [Troubleshooting](#troubleshooting)
+- [Files and Directories](#files-and-directories)
+
 ## How SNMP Plugins Differ from Agent-Based
 
 | Aspect | Agent-Based | SNMP-Based |

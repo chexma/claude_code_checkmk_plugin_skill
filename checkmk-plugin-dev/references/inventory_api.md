@@ -2,6 +2,22 @@
 
 Inventory plugins collect hardware and software information for CheckMK inventory.
 
+## Contents
+
+- [Concept](#concept)
+- [Inventory Plugin Structure](#inventory-plugin-structure)
+- [Variable Naming](#variable-naming)
+- [Inventory Paths (Inventory Tree)](#inventory-paths-inventory-tree)
+- [Attributes vs. TableRow](#attributes-vs-tablerow)
+- [Status Columns (Live Data)](#status-columns-live-data)
+- [Agent Output for Inventory](#agent-output-for-inventory)
+- [Complex Inventory Plugin](#complex-inventory-plugin)
+- [Running and Testing Inventory](#running-and-testing-inventory)
+- [Inventory History](#inventory-history)
+- [Inventory as Service](#inventory-as-service)
+- [Best Practices](#best-practices)
+- [Related Topics (CheckMK 2.5+)](#related-topics-checkmk-25)
+
 ## Concept
 
 ```

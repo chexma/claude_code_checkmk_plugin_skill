@@ -2,6 +2,24 @@
 
 MKP (Monitoring Kit Package) is the standard format for CheckMK extensions.
 
+## Contents
+
+- [CRITICAL: Package Management Safety](#critical-package-management-safety)
+- [Quick Start](#quick-start)
+- [Key File Locations](#key-file-locations)
+- [MKP CLI Commands](#mkp-cli-commands)
+- [Directory Structure (2.4 & 2.5, unchanged)](#directory-structure-24--25-unchanged)
+- [Package Manifest Format](#package-manifest-format)
+- [File Categories in Manifest](#file-categories-in-manifest)
+- [Workflows](#workflows)
+- [Version Management](#version-management)
+- [Common Pitfalls](#common-pitfalls)
+- [Checkman Pages (Manual)](#checkman-pages-manual)
+- [Versioning Best Practices](#versioning-best-practices)
+- [Development with Git](#development-with-git)
+- [Troubleshooting](#troubleshooting)
+- [Migration from Legacy Packages](#migration-from-legacy-packages)
+
 ## CRITICAL: Package Management Safety
 
 > **WARNING: `mkp disable` and `mkp remove` DELETE FILES!**

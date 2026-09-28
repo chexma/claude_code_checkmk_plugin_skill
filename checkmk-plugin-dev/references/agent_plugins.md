@@ -2,6 +2,22 @@
 
 Agent plugins are scripts that run **on the monitored host** and collect additional data. They are called by the CheckMK agent.
 
+## Contents
+
+- [Difference from Special Agents](#difference-from-special-agents)
+- [Directories on the Host](#directories-on-the-host)
+- [Simple Agent Plugin (Bash)](#simple-agent-plugin-bash)
+- [Agent Plugin (Python) - Official Style](#agent-plugin-python---official-style)
+- [Configuration File for Linux Plugins](#configuration-file-for-linux-plugins)
+- [Windows Agent Plugin (PowerShell)](#windows-agent-plugin-powershell)
+- [Caching and Intervals](#caching-and-intervals)
+- [Async Agent Plugins (Linux)](#async-agent-plugins-linux)
+- [Configurable Plugins](#configurable-plugins)
+- [Distribution via Agent Bakery (Enterprise)](#distribution-via-agent-bakery-enterprise)
+- [Check Plugin for Agent Data](#check-plugin-for-agent-data)
+- [Debugging Agent Plugins](#debugging-agent-plugins)
+- [Best Practices](#best-practices)
+
 ## Difference from Special Agents
 
 | Type | Runs on | Connection | Use Case |

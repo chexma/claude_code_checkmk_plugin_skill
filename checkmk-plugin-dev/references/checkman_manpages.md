@@ -1,5 +1,21 @@
 # CheckMK Man Pages - Developer Reference
 
+## Contents
+
+- [Overview](#overview)
+- [Location](#location)
+- [File Format](#file-format)
+- [Required Fields](#required-fields)
+- [Optional Fields](#optional-fields)
+- [Formatting in Description](#formatting-in-description)
+- [Common Catalog Categories](#common-catalog-categories)
+- [Complete Example](#complete-example)
+- [Example Without Item](#example-without-item)
+- [Testing Man Pages](#testing-man-pages)
+- [Best Practices](#best-practices)
+- [Common Mistakes](#common-mistakes)
+- [Integration with MKP Packaging](#integration-with-mkp-packaging)
+
 ## Overview
 
 Man pages provide documentation for check plugins that is accessible via the CheckMK command line and web interface. They describe what a check does, how it determines states, and how services are discovered.

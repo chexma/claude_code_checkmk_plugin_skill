@@ -4,6 +4,17 @@
 
 This file covers the REST API as a *client* — e.g. for automation scripts, piggyback host creation, or reading CheckMK data from a special agent. It is not a plugin API; for writing check plugins see `agent_based_api.md`.
 
+## Contents
+
+- [Versioning](#versioning)
+- [Documentation URLs (inside CheckMK)](#documentation-urls-inside-checkmk)
+- [Authentication](#authentication)
+- [Client Basics](#client-basics)
+- [New in unstable (CheckMK 2.5.0)](#new-in-unstable-checkmk-250)
+- [Changes to Shared Endpoints](#changes-to-shared-endpoints)
+- [Example: Create Piggyback Hosts (v1, stable)](#example-create-piggyback-hosts-v1-stable)
+- [Checking What Changed in a New Build](#checking-what-changed-in-a-new-build)
+
 ## Versioning
 
 | Version | Base URL | Status |
@@ -14,7 +25,8 @@ This file covers the REST API as a *client* — e.g. for automation scripts, pig
 
 - Versioning covers the whole API, not individual endpoints. Only the major number is used (`v1`, `v2`, …); compatible changes land in the current version without a bump.
 - All published major versions stay supported for the whole CheckMK major version, so patch updates do not break `v1` scripts.
-- **Every v1 endpoint is also available under `unstable`** (same paths). So a script can switch its base URL to `unstable` to use one new endpoint and keep using the familiar ones.
+- **Every v1 endpoint is also available under `unstable`** (same paths).
+- **Prefer `v1` for each call.** Use the `unstable` base URL only for the endpoints that exist only there, so the rest of the script stays on the stable version. For example, keep two base URLs in the client instead of switching everything to `unstable`.
 - Endpoints new in unstable carry the marker `` `NEW`: This endpoint is new in this API version. `` in their description.
 
 ## Documentation URLs (inside CheckMK)
@@ -61,14 +73,18 @@ Any user can use the API — automation users or GUI users — as long as it has
 ```python
 import requests
 
-SITE_URL = "https://mycmk.example.com/mysite/check_mk/api/unstable"   # or .../api/v1
+API_URL = "https://mycmk.example.com/mysite/check_mk/api"
+V1 = f"{API_URL}/v1"              # default for everything
+UNSTABLE = f"{API_URL}/unstable"  # only for endpoints that exist only there
+
 session = requests.Session()
-session.headers["Authorization"] = "Bearer automation <secret>"
+# New 2.5 sites have no default "automation" user (Werk #17344): create one
+session.headers["Authorization"] = "Bearer <automation-user> <secret>"
 session.headers["Accept"] = "application/json"
 
 
-def get(path: str, **params):
-    resp = session.get(f"{SITE_URL}{path}", params=params, timeout=30)
+def get(path: str, *, base: str = V1, **params):
+    resp = session.get(f"{base}{path}", params=params, timeout=30)
     resp.raise_for_status()
     return resp.json()
 ```
@@ -125,6 +141,7 @@ Time values are ISO 8601 **with timezone**, e.g. `2026-09-01T00:00:00+00:00`. Pe
 ```python
 data = get(
     "/objects/host_availability/myhost",
+    base=UNSTABLE,
     time_range_from="2026-09-01T00:00:00+00:00",
     time_range_until="2026-09-28T00:00:00+00:00",
 )
@@ -148,7 +165,7 @@ data = get(
 Returns the inventory trees of the given hosts — useful to verify an `InventoryPlugin` (see `inventory_api.md`) without the GUI.
 
 ```python
-trees = get("/domain-types/inventory/collections/all", host_names=["host1", "host2"])
+trees = get("/domain-types/inventory/collections/all", base=UNSTABLE, host_names=["host1", "host2"])
 ```
 
 ### Relays (6 endpoints) — Ultimate / Ultimate MT / Cloud
@@ -211,7 +228,7 @@ DCD create body: `dcd_id`, `title`, `site`, `connector` required; optional `comm
 
 ```python
 resp = session.post(
-    f"{SITE_URL}/domain-types/host_config/collections/all",
+    f"{V1}/domain-types/host_config/collections/all",
     json={
         "folder": "/piggyback",
         "host_name": "vm-01",
@@ -221,7 +238,7 @@ resp = session.post(
 )
 resp.raise_for_status()
 session.post(
-    f"{SITE_URL}/domain-types/activation_run/actions/activate-changes/invoke",
+    f"{V1}/domain-types/activation_run/actions/activate-changes/invoke",
     json={"redirect": False, "force_foreign_changes": False},
     timeout=60,
 ).raise_for_status()

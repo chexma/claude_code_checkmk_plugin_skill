@@ -2,6 +2,19 @@
 
 The spool directory allows external programs to write agent output directly to files, which the CheckMK agent collects and integrates into its output. This is useful for long-running processes, cronjobs, backup monitoring, and testing check plugins.
 
+## Contents
+
+- [Use Cases](#use-cases)
+- [Directory Paths](#directory-paths)
+- [File Format](#file-format)
+- [File Naming](#file-naming)
+- [Examples](#examples)
+- [Practical Example: Backup Monitor](#practical-example-backup-monitor)
+- [Long-Running Daemon Example](#long-running-daemon-example)
+- [Important Considerations](#important-considerations)
+- [Debugging](#debugging)
+- [Best Practices](#best-practices)
+
 ## Use Cases
 
 - Monitoring backup jobs (write result when backup completes)

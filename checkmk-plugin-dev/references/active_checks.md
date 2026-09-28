@@ -1,5 +1,26 @@
 # Active Checks Development Reference
 
+## Contents
+
+- [Overview](#overview)
+- [When to Use Active Checks](#when-to-use-active-checks)
+- [Active Check vs Special Agent](#active-check-vs-special-agent)
+- [Architecture](#architecture)
+- [File Locations (2.4 & 2.5, unchanged)](#file-locations-24--25-unchanged)
+- [Component Overview](#component-overview)
+- [1. The Executable](#1-the-executable)
+- [2. Server-Side Calls Configuration](#2-server-side-calls-configuration)
+- [3. Ruleset Definition](#3-ruleset-definition)
+- [Complete Example: Certificate Check](#complete-example-certificate-check)
+- [Using Built-in Nagios Plugins](#using-built-in-nagios-plugins)
+- [Testing Active Checks](#testing-active-checks)
+- [Macros Available in Active Checks](#macros-available-in-active-checks)
+- [Best Practices](#best-practices)
+- [Troubleshooting](#troubleshooting)
+- [Files and Directories](#files-and-directories)
+- [Secrets in the Executable (CheckMK 2.5+)](#secrets-in-the-executable-checkmk-25)
+- [Related Topics (CheckMK 2.5+)](#related-topics-checkmk-25)
+
 ## Overview
 
 Active Checks are programs executed by the CheckMK server to monitor network services from the outside. Unlike agent-based checks, they:

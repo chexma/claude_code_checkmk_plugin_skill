@@ -2,6 +2,24 @@
 
 Local Checks are the simplest way to create custom services in CheckMK. The status is determined directly in the script - no check plugin on the server required.
 
+## Contents
+
+- [Difference from Agent Plugins](#difference-from-agent-plugins)
+- [Directories](#directories)
+- [Output Format](#output-format)
+- [Simple Examples](#simple-examples)
+- [Metrics](#metrics)
+- [Dynamic State Calculation (P)](#dynamic-state-calculation-p)
+- [Lower and Upper Thresholds](#lower-and-upper-thresholds)
+- [Multi-line Output](#multi-line-output)
+- [Asynchronous Execution (Caching)](#asynchronous-execution-caching)
+- [Complete Example: Backup Check](#complete-example-backup-check)
+- [Distribution via Agent Bakery (Enterprise)](#distribution-via-agent-bakery-enterprise)
+- [Using Known Metrics](#using-known-metrics)
+- [Debugging](#debugging)
+- [Common Errors](#common-errors)
+- [Best Practices](#best-practices)
+
 ## Difference from Agent Plugins
 
 | Type | Status Calculation | Server-side Code | Complexity |

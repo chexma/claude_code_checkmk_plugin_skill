@@ -2,6 +2,20 @@
 
 This guide covers migrating older CheckMK plugins to the current APIs (`cmk.agent_based.v2`, `cmk.rulesets.v1`, `cmk.graphing.v1`, `cmk.server_side_calls.v1` — unchanged between 2.4 and 2.5). CheckMK provides migration helper scripts in the repository. If the target is 2.5 and the plugin uses the Bakery API, see the v1→v2_unstable migration steps in `bakery_api.md` instead.
 
+## Contents
+
+- [Migration Paths Overview](#migration-paths-overview)
+- [Getting the Migration Scripts](#getting-the-migration-scripts)
+- [Important Notes](#important-notes)
+- [1. Check API v1 to v2 Migration](#1-check-api-v1-to-v2-migration)
+- [2. Legacy Checks (check_info) to v2](#2-legacy-checks-check_info-to-v2)
+- [3. Legacy ValueSpecs to Rulesets API v1](#3-legacy-valuespecs-to-rulesets-api-v1)
+- [4. Legacy Graphing to Graphing API v1](#4-legacy-graphing-to-graphing-api-v1)
+- [5. Legacy Server-Side Calls to v1](#5-legacy-server-side-calls-to-v1)
+- [Complete Migration Workflow](#complete-migration-workflow)
+- [Common Migration Issues](#common-migration-issues)
+- [Resources](#resources)
+
 ## Migration Paths Overview
 
 | From | To | Script |

@@ -80,7 +80,7 @@ Personal skills in:
 - `local_check_windows.ps1` - PowerShell template
 
 **Bakery & Active Checks**
-- `bakery_plugin.py` - Bakery plugin with scriptlets (v1, stable, 2.3–2.4+)
+- `bakery_plugin.py` - Bakery plugin with scriptlets (v1, stable, 2.3+ incl. 2.5)
 - `bakery_plugin_v2.py` - Bakery plugin, v2_unstable (CheckMK 2.5+)
 - `bakery_ruleset.py` - AgentConfig ruleset
 - `active_check_executable.py` - Nagios-compatible executable

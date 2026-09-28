@@ -2,6 +2,19 @@
 
 Piggyback allows a special agent to provide data for **other hosts** - e.g., VMs, containers, cloud resources.
 
+## Contents
+
+- [Concept](#concept)
+- [Special Agent Output Format](#special-agent-output-format)
+- [Piggyback Marker Syntax](#piggyback-marker-syntax)
+- [Check Plugin for Piggyback Data](#check-plugin-for-piggyback-data)
+- [Piggyback Host Creation](#piggyback-host-creation)
+- [Host Configuration for Piggyback](#host-configuration-for-piggyback)
+- [Piggyback with Name Mapping](#piggyback-with-name-mapping)
+- [Prism-Style Multi-Section Piggyback](#prism-style-multi-section-piggyback)
+- [Debugging Piggyback](#debugging-piggyback)
+- [Best Practices](#best-practices)
+
 ## Concept
 
 ```

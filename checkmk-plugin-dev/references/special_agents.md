@@ -1,5 +1,26 @@
 # Special Agents API Reference
 
+## Contents
+
+- [Directory Structure](#directory-structure)
+- [1. The Special Agent Executable](#1-the-special-agent-executable)
+- [2. Rule Configuration](#2-rule-configuration)
+- [3. Call Configuration](#3-call-configuration)
+- [4. Check Plugin (Optional)](#4-check-plugin-optional)
+- [Host Configuration](#host-configuration)
+- [Testing](#testing)
+- [Password Handling Security](#password-handling-security)
+- [SSL Verification Gotchas](#ssl-verification-gotchas)
+- [Topic Options for Rule Placement](#topic-options-for-rule-placement)
+- [Minimal Example (Hello World)](#minimal-example-hello-world)
+- [Troubleshooting](#troubleshooting)
+- [Files and Directories](#files-and-directories)
+- [Complete Workflow](#complete-workflow)
+- [Best Practices](#best-practices)
+- [Server-Side Calls API Reference (cmk.server_side_calls.v1)](#server-side-calls-api-reference-cmkserver_side_callsv1)
+- [2.5 Executable Idiom (as used by shipped agents)](#25-executable-idiom-as-used-by-shipped-agents)
+- [Related Topics (CheckMK 2.5+)](#related-topics-checkmk-25)
+
 ## Directory Structure
 
 ```

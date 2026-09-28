@@ -1,5 +1,23 @@
 # Agent-Based Check API V2 Reference
 
+## Contents
+
+- [Location](#location)
+- [Complete Import Statement](#complete-import-statement)
+- [AgentSection Class](#agentsection-class)
+- [CheckPlugin Class](#checkplugin-class)
+- [check_levels() Function](#check_levels-function)
+- [Metric Class](#metric-class)
+- [Result Class](#result-class)
+- [render Module Functions](#render-module-functions)
+- [Value Store (Persistent Data)](#value-store-persistent-data)
+- [Host Labels](#host-labels)
+- [Multiple Sections](#multiple-sections)
+- [Cluster Checks](#cluster-checks)
+- [TypedDict for Check Parameters](#typeddict-for-check-parameters)
+- [Debugging](#debugging)
+- [Related Topics](#related-topics)
+
 ## Location
 `~/local/lib/python3/cmk_addons/plugins/<family>/agent_based/`
 

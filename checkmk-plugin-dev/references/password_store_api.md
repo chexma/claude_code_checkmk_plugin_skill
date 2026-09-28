@@ -1,6 +1,6 @@
 # Password Store API
 
-> **CheckMK 2.5+, unstable**: `cmk.password_store.v1_unstable` is a work-in-progress API and may still change. It is expected to become stable in the next major release, 3.0.0; the legacy APIs (`cmk.special_agents.v0_unstable`, `cmk.utils.password_store`, bakery API v1) are deprecated in 3.0.0 and removed in 3.1.0 (Werk #18600, corrected by Werk #19370). Mention this to the user before recommending it for production plugins. No 2.4 equivalent — 2.4 plugins pass `params["password"].unsafe()` in `command_arguments` instead (see `special_agents.md`, `active_checks.md`).
+> **CheckMK 2.5+, unstable**: `cmk.password_store.v1_unstable` is a work-in-progress API and may still change. Timeline: see `SKILL.md` → *Stability and timeline*. Mention this to the user before recommending it for production plugins. No 2.4 equivalent — 2.4 plugins pass `params["password"].unsafe()` in `command_arguments` instead (see `special_agents.md`, `active_checks.md`).
 
 ## Purpose
 
@@ -61,7 +61,7 @@ password = secret.reveal()  # Only call reveal() where you actually need the pla
 1. **Reveal late**: hold the `Secret` object as long as possible; call `.reveal()` only at the point of use (e.g. right before building an HTTP `Authorization` header).
 2. **Don't log secrets**: `Secret.__repr__`/`__str__` are masked by design — don't work around that by logging `.reveal()` output.
 3. **Use `--<name>-id` in the server-side calls plugin**, never the plaintext option.
-4. **Treat it as unstable**: check the changelog before relying on it beyond 2.5 (stabilization expected in 3.0.0).
+4. **Treat it as unstable**: check the changelog before relying on it beyond 2.5 (see `SKILL.md` → *Stability and timeline*).
 5. **Supporting 2.4 too**: wrap the import in `try/except ImportError` and fall back to a plain `--password` option; the 2.4 SSC must then pass `params["password"].unsafe()` (see `assets/templates/active_check_executable.py`).
 
 ## Related Topics

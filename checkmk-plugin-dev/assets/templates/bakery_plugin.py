@@ -10,8 +10,8 @@
 #   ~/local/lib/python3/cmk/base/cee/plugins/bakery/my_plugin.py
 #   (the old ~/local/lib/check_mk symlink was removed in 2.5, Werk #17969)
 #
-# Bakery API v1 is deprecated in CheckMK 3.0.0 and removed in 3.1.0
-# (Werk #18600, corrected by Werk #19370). It still works in 2.4 and 2.5.
+# Bakery API v1 works in 2.4 and 2.5; deprecated in 3.0.0, removed in 3.1.0
+# (Werk #19370).
 #
 # Required companion files:
 #   1. Agent plugins in ~/local/share/check_mk/agents/plugins/

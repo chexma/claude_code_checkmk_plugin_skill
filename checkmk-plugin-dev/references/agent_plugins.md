@@ -475,7 +475,7 @@ rule_spec_agent_config_myapp = AgentConfig(
 
 | API | Location | Status |
 |-----|----------|--------|
-| `cmk.base.plugins.bakery.bakery_api.v1` (documented v1 API) | `~/local/lib/python3/cmk/base/cee/plugins/bakery/` | Still loaded in 2.5 for compatibility; deprecated in 3.0.0, removed in 3.1.0 (Werks #18600/#19370) |
+| `cmk.base.plugins.bakery.bakery_api.v1` (documented v1 API) | `~/local/lib/python3/cmk/base/cee/plugins/bakery/` | Still loaded in 2.5 for compatibility; deprecated (see `SKILL.md` → *Stability and timeline*) |
 | `cmk.bakery.v2_unstable` (2.5+) | `~/local/lib/python3/cmk_addons/plugins/<family>/bakery/` | New family layout, API may still change |
 
 The old `~/local/lib/check_mk/...` path no longer exists (symlink removed in 2.5, Werk #17969). See `bakery_api.md` for both APIs in detail.

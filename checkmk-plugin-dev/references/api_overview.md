@@ -53,19 +53,7 @@ The old `api/1.0/` spelling still works but is legacy. Details on versions, auth
 ## Plugin Development File Locations
 
 ### Directory Structure
-```
-~/local/lib/python3/cmk_addons/plugins/<family>/
-├── agent_based/        # Check plugins (Check API V2)
-├── rulesets/           # Rules (Rulesets API V1)  
-├── graphing/           # Metrics (Graphing API V1)
-├── server_side_calls/  # Special agent configs
-├── libexec/            # Special agent executables
-├── checkman/           # Man pages
-├── bakery/             # Bakery plugins (2.5+, cmk.bakery.v2_unstable)
-└── inventory_ui/       # Inventory UI plugins (2.5+)
-```
-
-`bakery/` and `inventory_ui/` are new in 2.5; everything else is identical in 2.4. The symlinks `~/lib/check_mk` and `~/local/lib/check_mk` were removed in 2.5 (Werk #17969).
+Plugin folder layout (including the 2.5 folders `bakery/` and `inventory_ui/` and the Bakery v1 exception): see `SKILL.md` → *Directory Structure*.
 
 ### Built-in Plugins (for reference)
 ```
@@ -162,70 +150,10 @@ from cmk.server_side_calls.v1 import (
 )
 ```
 
-## Variable Naming Prefixes (CRITICAL)
+## Variable Naming Prefixes and Development Workflow
 
-Plugins are auto-discovered by name prefix:
-
-| Prefix | Plugin Type | Example |
-|--------|-------------|---------|
-| `agent_section_` | Agent section | `agent_section_mycheck` |
-| `snmp_section_` | SNMP section | `snmp_section_mydevice` |
-| `check_plugin_` | Check plugin | `check_plugin_mycheck` |
-| `inventory_plugin_` | Inventory plugin | `inventory_plugin_myinv` |
-| `rule_spec_` | Ruleset spec | `rule_spec_mycheck` |
-| `special_agent_` | Special agent config | `special_agent_myagent` |
-| `active_check_` | Active check config | `active_check_myactive` |
-| `metric_` | Metric definition | `metric_mymetric` |
-| `graph_` | Graph definition | `graph_mygraph` |
-| `perfometer_` | Perfometer | `perfometer_myperf` |
-| `translation_` | Metric translation | `translation_legacy` |
-| `bakery_plugin_` | Bakery plugin (2.5+, v2_unstable) | `bakery_plugin_myplugin` |
-| `node_` | Inventory UI node (2.5+) | `node_myapp` |
-
-## Development Workflow
-
-### 1. Create Plugin Files
-```bash
-# Create family directory
-mkdir -p ~/local/lib/python3/cmk_addons/plugins/mycompany/agent_based
-mkdir -p ~/local/lib/python3/cmk_addons/plugins/mycompany/rulesets
-mkdir -p ~/local/lib/python3/cmk_addons/plugins/mycompany/graphing
-```
-
-### 2. Write Plugin Code
-```bash
-vim ~/local/lib/python3/cmk_addons/plugins/mycompany/agent_based/mycheck.py
-```
-
-### 3. Test Syntax
-```bash
-python3 -m py_compile ~/local/lib/python3/cmk_addons/plugins/mycompany/agent_based/mycheck.py
-```
-
-### 4. Restart Services (if needed)
-```bash
-# For ruleset/graphing changes
-omd restart apache
-
-# For search index
-omd restart redis
-```
-
-### 5. Test Discovery
-```bash
-cmk -vI --detect-plugins=mycheck hostname
-```
-
-### 6. Test Check Execution
-```bash
-cmk -v --detect-plugins=mycheck hostname
-cmk --debug --detect-plugins=mycheck hostname  # With debug
-```
-
-### 7. Activate Changes
-```bash
-cmk -R
-```
+- Discovery prefixes (`agent_section_`, `check_plugin_`, `rule_spec_`, …): see `SKILL.md` → *Variable Naming*.
+- Create → test → activate workflow and CLI commands: see `best_practices.md`.
 
 ## External Resources
 
@@ -251,21 +179,4 @@ Common tables: `hosts`, `services`, `hostgroups`, `servicegroups`, `contacts`, `
 
 ## Local Checks (Simple Alternative)
 
-For quick, simple checks without full plugin development:
-
-```bash
-#!/bin/bash
-# /usr/lib/check_mk_agent/local/mycheck
-
-# Output format: STATUS NAME METRICS SUMMARY
-# STATUS: 0=OK, 1=WARN, 2=CRIT, 3=UNKNOWN
-
-value=$(cat /proc/loadavg | cut -d' ' -f1)
-echo "P \"Load Average\" load=$value;4;8 Current load: $value"
-```
-
-Output formats:
-- `0 "Service Name" - Text` - Simple OK
-- `1 "Service Name" - Warning text` - Simple WARN  
-- `2 "Service Name" - Critical text` - Simple CRIT
-- `P "Service Name" metric=value;warn;crit;min;max Text` - With metrics
+The local check output format and examples are in `local_checks.md`.

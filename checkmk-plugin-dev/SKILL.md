@@ -1,19 +1,17 @@
 ---
 name: checkmk-plugin-dev
 description: >
-  Comprehensive guidance for developing CheckMK monitoring plugins for
-  both 2.4 and 2.5 using current APIs including agent-based checks, SNMP,
-  special agents, active checks, rulesets, graphing, and bakery
-  packaging. Provides decision trees, templates, and API references for
-  the full plugin lifecycle, with explicit version tagging wherever 2.4
-  and 2.5 diverge (bakery API, and the new 2.5 unstable password_store /
-  server_side_programs / inventory_ui APIs). Use when user asks to
-  "create a CheckMK plugin", "build a check plugin", "write an SNMP
-  check", "create a special agent", "add metrics to a check", "create a
-  ruleset", "package an MKP", "migrate a legacy plugin", or mentions
-  CheckMK 2.4 or 2.5 plugin development. Do NOT use for CheckMK GUI
-  configuration, user management, or general Linux/Nagios monitoring
-  questions.
+  This skill should be used when the user develops CheckMK 2.4 or 2.5
+  extensions: agent-based and SNMP checks, special agents, active checks,
+  agent and local plugins, rulesets, graphing, HW/SW inventory, Agent
+  Bakery plugins, MKP packages, legacy plugin migration, or Python/shell
+  clients for the CheckMK REST API (v1 and 2.5 unstable). Trigger phrases:
+  "create a CheckMK plugin", "write an SNMP check", "build a special
+  agent", "add metrics or a perfometer", "create a ruleset", "write a
+  bakery plugin", "package an MKP", "write a local check", "script the
+  CheckMK REST API", or mentions of cmk_addons, cmk.agent_based.v2 or
+  cmk.server_side_calls. Do NOT use for manual GUI/Setup configuration,
+  site administration, or generic Nagios/Linux monitoring questions.
 compatibility: Requires CheckMK 2.4+ environment. Claude Code recommended.
 metadata:
   author: andre
@@ -28,16 +26,30 @@ Comprehensive guidance for developing CheckMK monitoring plugins using current A
 
 The core APIs (Check API V2, Rulesets API V1, Graphing API V1, Server-Side Calls V1) are **identical** in 2.4 and 2.5 — nearly all reference files and templates below work unchanged for either version. Only ask about the target version when the task touches one of these:
 
-| Area | 2.4 (and 2.5 default) | 2.5+ only |
+| Area | Stable (2.4 and 2.5) | 2.5+ only (unstable) |
 |---|---|---|
-| Agent Bakery | `bakery_api.md` → Version 1 (`cmk.base.plugins.bakery.bakery_api.v1`, stable) | `bakery_api.md` → Version 2 (`cmk.bakery.v2_unstable`) |
+| Agent Bakery | `references/bakery_api.md` → Version 1 (`cmk.base.plugins.bakery.bakery_api.v1`) | `references/bakery_api.md` → Version 2 (`cmk.bakery.v2_unstable`) |
 | Reading stored secrets in server-side programs | — (use `Password` form spec + `.unsafe()`) | `references/password_store_api.md` (`v1_unstable`) |
 | Crash reports / call-to-call persistence for special agents | — | `references/server_side_programs_api.md` (`v1_unstable`) |
 | Custom HW/SW inventory tree visualizations | — | `references/inventory_ui_api.md` (`v1_unstable`) |
 | Custom DCD connector (commercial editions) | — | `references/dcd_connector_api.md` (unversioned) |
 | Automating CheckMK via REST API (dashboards, availability, relays, OTel, …) | `references/rest_api.md` → `v1` | `references/rest_api.md` → `unstable` endpoints |
 
-The three 2.5-only APIs are marked `unstable` upstream (planned to become stable in the next major release, 3.0.0; the legacy APIs they replace are deprecated in 3.0.0 and removed in 3.1.0 (Werk #18600, corrected by Werk #19370 — there is no 2.6/2.7)) — mention this to the user before recommending them for production use. The same applies to REST API endpoints under `/api/unstable/`: they may change or disappear without notice.
+### Stability and timeline
+
+This is the one place for the timeline. Reference files only link here.
+
+- All `*_unstable` APIs above are **unstable** in 2.5 and may change incompatibly.
+- They are planned to become stable (renamed) in the **next major release, 3.0.0**. Werk #19370 corrects Werk #18600 here: there is no 2.6/2.7.
+- The legacy APIs they replace (bakery API v1, `cmk.special_agents.v0_unstable`, `cmk.utils.password_store`) are **deprecated in 3.0.0 and removed in 3.1.0**.
+- REST API endpoints under `/api/unstable/` may change or disappear at any time.
+
+**Tell the user before recommending any unstable API for production use.** This also applies to the special-agent and active-check templates, which use one by default:
+
+- The executables (`datasource_complete.py`, `active_check_executable.py`) use `cmk.password_store.v1_unstable` on 2.5 and fall back to a plain `--password` on 2.4.
+- The server-side-call templates (`datasource_server_side_calls.py`, `active_check_server_side_calls.py`) emit `--password-id` by default, which works on 2.5 only. For 2.4, switch to the commented `.unsafe()` line.
+
+Say this when you hand the templates over.
 
 ## Choose Your Path
 
@@ -49,6 +61,7 @@ The three 2.5-only APIs are marked `unstable` upstream (planned to become stable
 | Check network services (HTTP/TCP) | `references/active_checks.md` | `active_check_executable.py` |
 | Run scripts on monitored hosts | `references/agent_plugins.md` | `linux_agent_plugin.py` |
 | Create simplest host-side check | `references/local_checks.md` | `local_check.py` |
+| Feed data from cron jobs/external programs | `references/spool_directory.md` | - |
 | Monitor VMs/containers | `references/piggyback_api.md` | `datasource_complete.py` |
 | Distribute plugins via Agent Bakery | `references/bakery_api.md` | `bakery_plugin.py` (v1) / `bakery_plugin_v2.py` (2.5 unstable) |
 | Package for distribution | `references/mkp_packaging.md` | - |
@@ -70,7 +83,7 @@ Version-specific:
 
 | API | Import | Version | Purpose |
 |-----|--------|---------|---------|
-| Bakery API v1 | `cmk.base.plugins.bakery.bakery_api.v1` | 2.3–2.4+ (stable) | Agent Bakery distribution |
+| Bakery API v1 | `cmk.base.plugins.bakery.bakery_api.v1` | 2.3+ (stable, also 2.5) | Agent Bakery distribution |
 | Bakery API v2 | `cmk.bakery.v2_unstable` | 2.5+ (unstable) | Agent Bakery distribution, new layout |
 | Password Store | `cmk.password_store.v1_unstable` | 2.5+ (unstable) | Read stored secrets in server-side programs |
 | Server-Side Programs | `cmk.server_side_programs.v1_unstable` | 2.5+ (unstable) | Crash reports, call-to-call persistence |
@@ -91,6 +104,8 @@ Place all plugins under `~/local/lib/python3/cmk_addons/plugins/<family_name>/`:
 ├── bakery/            # Bakery plugins (2.5+, cmk.bakery.v2_unstable)
 └── inventory_ui/      # Inventory UI views (2.5+, cmk.inventory_ui.v1_unstable)
 ```
+
+Exception: **Bakery API v1** plugins (stable, 2.4 and 2.5) do *not* go into `cmk_addons`. They live in `~/local/lib/python3/cmk/base/cee/plugins/bakery/`. Only v2_unstable plugins use `<family>/bakery/`.
 
 Since 2.5 the symlinks `~/lib/check_mk` and `~/local/lib/check_mk` are gone (Werk #17969). Always use the real paths below `~/local/lib/python3/`.
 
@@ -191,6 +206,7 @@ omd restart apache                             # After ruleset/graphing changes
 - `references/active_checks.md` - Network service checks
 - `references/agent_plugins.md` - Host-side scripts
 - `references/local_checks.md` - Simplest host-side checks
+- `references/spool_directory.md` - Agent spool directory for output of cron jobs and external programs
 - `references/inventory_api.md` - HW/SW inventory collection (agent_based side)
 - `references/inventory_ui_api.md` - **2.5+ unstable**: custom inventory tree visualizations
 - `references/password_store_api.md` - **2.5+ unstable**: reading stored secrets
@@ -205,10 +221,12 @@ omd restart apache                             # After ruleset/graphing changes
 
 ## Templates
 
-Ready-to-use templates in `assets/templates/`:
+Ready-to-use templates. All template file names in this skill are relative to `assets/templates/`.
 
 ### First Plugin
 1. `agent_check_simple.py` → 2. `ruleset.py` → 3. `graphing.py`
+
+Next step: `agent_check_advanced.py` (items, check parameters, metrics)
 
 ### REST API Monitoring
 1. `datasource_complete.py` → 2. `datasource_server_side_calls.py` → 3. `datasource_ruleset.py`
@@ -235,7 +253,7 @@ Ready-to-use templates in `assets/templates/`:
 render.percent(50.5)      # "50.50%"
 render.bytes(1024)        # "1.00 KiB"
 render.timespan(3661)     # "1 hour 1 minute"
-render.datetime(ts)       # "Jan 01 2024, 12:00:00"
+render.datetime(ts)       # "2024-01-01 12:00:00"
 ```
 
 ### State Evaluation

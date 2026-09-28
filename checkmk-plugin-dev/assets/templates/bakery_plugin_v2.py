@@ -3,8 +3,7 @@
 # CheckMK Bakery Plugin Template — v2_unstable (CheckMK 2.5+)
 # =============================================================================
 #
-# UNSTABLE API: cmk.bakery.v2_unstable may change; it is planned to become
-# stable in the next major release, 3.0.0 (Werk #18600, corrected by
+# UNSTABLE API: cmk.bakery.v2_unstable may change (planned stable in 3.0.0,
 # Werk #19370). For CheckMK 2.4, or for stable 2.5 production plugins,
 # use bakery_plugin.py (v1) instead.
 #

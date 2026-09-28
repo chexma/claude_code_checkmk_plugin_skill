@@ -1,6 +1,6 @@
 # Server-Side Programs API
 
-> **CheckMK 2.5+, unstable**: `cmk.server_side_programs.v1_unstable` is a work-in-progress API and may still change. It is expected to become stable in the next major release, 3.0.0; the legacy APIs (`cmk.special_agents.v0_unstable`, `cmk.utils.password_store`, bakery API v1) are deprecated in 3.0.0 and removed in 3.1.0 (Werk #18600, corrected by Werk #19370). Mention this to the user before recommending it for production plugins. No 2.4 equivalent — these are convenience utilities layered on top of the existing special agent / active check executables described in `special_agents.md` and `active_checks.md`.
+> **CheckMK 2.5+, unstable**: `cmk.server_side_programs.v1_unstable` is a work-in-progress API and may still change. Timeline: see `SKILL.md` → *Stability and timeline*. Mention this to the user before recommending it for production plugins. No 2.4 equivalent — these are convenience utilities layered on top of the existing special agent / active check executables described in `special_agents.md` and `active_checks.md`.
 
 ## Purpose
 
@@ -85,7 +85,7 @@ parser.add_argument(
 1. **Wrap `main()` early**: apply `report_agent_crashes` at the outermost level so it catches everything, including argument-parsing bugs in your own code (not `argparse`'s own `SystemExit`).
 2. **Namespace `Storage` state tightly**: use specific keys (`"oauth_token"`, not `"state"`) — the store is per-host but shared across all keys your plugin writes.
 3. **Prefer `HostnameValidationAdapter` over disabling verification**: it keeps certificate validation on instead of the common (insecure) `verify=False` workaround — see the SSL gotchas in `special_agents.md`.
-4. **Treat it as unstable**: check the changelog before relying on it beyond 2.5 (stabilization expected in 3.0.0).
+4. **Treat it as unstable**: check the changelog before relying on it beyond 2.5 (see `SKILL.md` → *Stability and timeline*).
 
 ## Related Topics
 

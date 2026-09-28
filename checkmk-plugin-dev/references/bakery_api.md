@@ -12,7 +12,7 @@ Two Bakery API versions exist side by side:
 |---|---|---|
 | Import | `cmk.base.plugins.bakery.bakery_api.v1` (as `.bakery_api.v1` relative import) | `cmk.bakery.v2_unstable` |
 | CheckMK version | 2.3–2.4+ (also works on 2.5) | 2.5+ only |
-| Stability | Stable (deprecated in 3.0.0, removed in 3.1.0) | **Unstable** — may change before it becomes stable in 3.0.0; not recommended for production yet |
+| Stability | Stable (deprecated in the next major release, see `SKILL.md` → *Stability and timeline*) | **Unstable** — may still change; not recommended for production yet |
 | Registration | `register.bakery_plugin(...)` call at import time | `BakeryPlugin` instance, name must start with `bakery_plugin_` — discovered by the backend, not registered at import |
 | `source` path for `Plugin`/`SystemBinary` | Relative to `~/local/share/check_mk/agents/` (`Plugin`: its `plugins/` subdir; Windows: `windows/plugins/`) | Relative to the plugin family's `agents/` directory (`cmk_addons/plugins/<FAMILY>/agents/`) |
 | Secrets | No dedicated abstraction | `Secret` class instances passed to plugin functions instead of raw password-store access |
@@ -20,7 +20,7 @@ Two Bakery API versions exist side by side:
 | Function arguments | Keyword args `conf` (+ `aghash` for scriptlets/Windows) | One positional argument: the parsed config; no `aghash` |
 | Default parameters | — | Required `default_parameters` argument (`None` = only baked when a rule is configured) |
 
-**Recommendation**: for CheckMK 2.4, use v1. For CheckMK 2.5, use v1 unless you specifically need the new plugin family layout or `Secret` handling — v2_unstable can still change. Timeline: unstable in 2.5; planned to become stable in the next major release, 3.0.0; the legacy APIs (bakery API v1, cmk.special_agents.v0_unstable, cmk.utils.password_store) are deprecated in 3.0.0 and removed in 3.1.0 (Werk #18600, corrected by Werk #19370). Tell the user this trade-off explicitly if they're targeting 2.5.
+**Recommendation**: for CheckMK 2.4, use v1. For CheckMK 2.5, use v1 unless you specifically need the new plugin family layout or `Secret` handling — v2_unstable can still change. Timeline: see `SKILL.md` → *Stability and timeline*. Tell the user this trade-off explicitly if they're targeting 2.5.
 
 > **Automation user (Werk #17344)**: new 2.5 sites no longer create a default `automation` user, and secrets of newly created automation users are no longer stored in clear text. Rules that rely on the automation secret (agent bakery / Agent Updater registration, auto-registration) need a user configured explicitly.
 
@@ -704,7 +704,7 @@ tail -f ~/var/log/agent_bakery.log
 
 ## Version 2 (Unstable — CheckMK 2.5+)
 
-> **Unstable API**: `cmk.bakery.v2_unstable` may change without notice — unstable in 2.5; planned to become stable in the next major release, 3.0.0; the legacy APIs (bakery API v1, cmk.special_agents.v0_unstable, cmk.utils.password_store) are deprecated in 3.0.0 and removed in 3.1.0 (Werk #18600, corrected by Werk #19370). Use v1 above for production plugins unless you specifically need what's described here.
+> **Unstable API**: `cmk.bakery.v2_unstable` may change without notice (timeline: see `SKILL.md` → *Stability and timeline*). Use v1 above for production plugins unless you specifically need what's described here.
 
 ### Key Differences from v1
 

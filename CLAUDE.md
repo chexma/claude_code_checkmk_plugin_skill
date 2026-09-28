@@ -30,7 +30,7 @@ Migration timeline per Werk #18600, corrected by Werk #19370 (2.5.0p11 — the n
 checkmk-plugin-dev/
 ├── SKILL.md              # Main skill entry point
 ├── references/           # Detailed API documentation (24 files)
-└── assets/templates/     # Ready-to-use plugin templates (22 files)
+└── assets/templates/     # Ready-to-use plugin templates (21 files)
 ```
 
 ## Key Files

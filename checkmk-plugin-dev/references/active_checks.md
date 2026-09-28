@@ -665,7 +665,7 @@ cmk -N myhost | grep check_mycheck
 
 ## Secrets in the Executable (CheckMK 2.5+)
 
-Pair `["--password-id", params["password"]]` in the server-side calls with the unstable password store API (expected stable in 3.0.0; replaces the legacy `cmk.utils.password_store`, which is deprecated in 3.0.0 and removed in 3.1.0 — Werk #18600, corrected by Werk #19370):
+Pair `["--password-id", params["password"]]` in the server-side calls with the unstable password store API, which replaces the legacy `cmk.utils.password_store` (see `SKILL.md` → *Stability and timeline*):
 
 ```python
 from cmk.password_store.v1_unstable import parser_add_secret_option, resolve_secret_option

@@ -1,6 +1,6 @@
 # Inventory UI API
 
-> **CheckMK 2.5+, unstable**: `cmk.inventory_ui.v1_unstable` is a work-in-progress API and may still change. It is expected to become stable in the next major release, 3.0.0; the legacy APIs (`cmk.special_agents.v0_unstable`, `cmk.utils.password_store`, bakery API v1) are deprecated in 3.0.0 and removed in 3.1.0 (Werk #18600, corrected by Werk #19370). Mention this to the user before recommending it for production plugins. No 2.4 equivalent — 2.4 has no way to customize how inventory data is *displayed*, only what's collected (see `inventory_api.md`).
+> **CheckMK 2.5+, unstable**: `cmk.inventory_ui.v1_unstable` is a work-in-progress API and may still change. Timeline: see `SKILL.md` → *Stability and timeline*. Mention this to the user before recommending it for production plugins. No 2.4 equivalent — 2.4 has no way to customize how inventory data is *displayed*, only what's collected (see `inventory_api.md`).
 
 ## Purpose
 
@@ -91,7 +91,7 @@ node_myapp_modules = Node(
 
 1. **Only add a `Node` when the default rendering is insufficient** — most `Attributes`/`TableRow` data from `inventory_api.md` displays fine without one.
 2. **Keep the path in sync** with the `path=[...]` used by the corresponding `InventoryPlugin`/`TableRow` in `inventory_api.md` — this API only changes rendering, not the data itself.
-3. **Treat it as unstable**: check the changelog before relying on it beyond 2.5 (stabilization expected in 3.0.0).
+3. **Treat it as unstable**: check the changelog before relying on it beyond 2.5 (see `SKILL.md` → *Stability and timeline*).
 
 ## Related Topics
 

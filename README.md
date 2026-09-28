@@ -54,7 +54,7 @@ Personal skills in:
 | `dcd_connector_api.md` | **2.5, commercial**: Dynamic Configuration Daemon connectors |
 | `rest_api.md` | CheckMK REST API client: v1 (stable) and unstable (2.5+) endpoints |
 
-### Templates (22 files)
+### Templates (21 files)
 
 **Basic Plugins**
 - `agent_check_simple.py` - Minimal agent-based check
@@ -63,7 +63,6 @@ Personal skills in:
 - `snmp_check_multitable.py` - Multi-table SNMP with dataclasses
 - `ruleset.py` - Ruleset definition
 - `graphing.py` - Metrics and perfometer definitions
-- `special_agent.py` - Basic special agent executable
 
 **Complete Datasource Program**
 - `datasource_complete.py` - Full special agent with piggyback

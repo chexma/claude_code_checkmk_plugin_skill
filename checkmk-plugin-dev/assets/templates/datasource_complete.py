@@ -41,7 +41,7 @@ from datetime import datetime
 from typing import Any, Optional
 from urllib.parse import urljoin
 
-# Versuche requests zu importieren, Fallback auf urllib
+# Try requests first, fall back to urllib
 try:
     import requests
     HAS_REQUESTS = True
@@ -51,9 +51,8 @@ except ImportError:
     import ssl
     HAS_REQUESTS = False
 
-# CheckMK 2.5+: unstable password store API. Expected to become stable in 3.0.0;
-# the legacy cmk.special_agents.v0_unstable / cmk.utils.password_store helpers are
-# deprecated in 3.0.0 and removed in 3.1.0. On 2.4 we fall back to a plain --password.
+# CheckMK 2.5+: unstable password store API (planned stable in 3.0.0, Werk #19370).
+# On 2.4 it does not exist, so we fall back to a plain --password option.
 try:
     from cmk.password_store.v1_unstable import parser_add_secret_option, resolve_secret_option
 except ImportError:  # CheckMK 2.4

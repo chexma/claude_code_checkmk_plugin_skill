@@ -344,7 +344,7 @@ if args.password is not None or args.password_id is not None:
     password = resolve_secret_option(args, "password").reveal()
 ```
 
-`cmk.password_store.v1_unstable` is unstable (expected stable in 3.0.0). Hyphenated option names like `"api-token"` need 2.5.0p13+ (Werk #22275). Details: `password_store_api.md`. To support 2.4 as well, wrap the import in `try/except ImportError`, fall back to a plain `--password` option and use `.unsafe()` in the 2.4 SSC (see `assets/templates/datasource_complete.py`).
+`cmk.password_store.v1_unstable` is unstable (see `SKILL.md` → *Stability and timeline*). Hyphenated option names like `"api-token"` need 2.5.0p13+ (Werk #22275). Details: `password_store_api.md`. To support 2.4 as well, wrap the import in `try/except ImportError`, fall back to a plain `--password` option and use `.unsafe()` in the 2.4 SSC (see `assets/templates/datasource_complete.py`).
 
 ### Hide the process title
 
@@ -620,7 +620,7 @@ cmk -vI --detect-plugins=myagent myhost --debug
 | `<family>/rulesets/` | Rule configuration |
 | `<family>/agent_based/` | Check plugins for the data |
 | `~/lib/python3/cmk/plugins/<family>/special_agent(s)/` | Built-in special agents (2.5) |
-| `~/lib/python3/cmk/special_agents/v0_unstable` | Legacy helper library — deprecated in 3.0.0, removed in 3.1.0 |
+| `~/lib/python3/cmk/special_agents/v0_unstable` | Legacy helper library — deprecated (see `SKILL.md` → *Stability and timeline*) |
 | `~/local/bin/` | Alternative location for executables (in PATH) |
 
 ## Complete Workflow
@@ -685,7 +685,7 @@ match params.get("proxy"):
 
 ## 2.5 Executable Idiom (as used by shipped agents)
 
-Shipped 2.5 agents (e.g. `jira`, `datadog`, `storeonce4x`) combine the new unstable helpers instead of the legacy `cmk.special_agents.v0_unstable` / `cmk.utils.password_store` (deprecated in 3.0.0, removed in 3.1.0; Werk #18600, corrected by Werk #19370):
+Shipped 2.5 agents (e.g. `jira`, `datadog`, `storeonce4x`) combine the new unstable helpers instead of the legacy `cmk.special_agents.v0_unstable` / `cmk.utils.password_store` (deprecated, see `SKILL.md` → *Stability and timeline*):
 
 ```python
 from cmk.password_store.v1_unstable import parser_add_secret_option, resolve_secret_option

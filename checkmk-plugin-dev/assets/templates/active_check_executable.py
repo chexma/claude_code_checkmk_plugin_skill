@@ -29,7 +29,7 @@ import time
 from typing import Optional, Tuple
 
 # CheckMK 2.5+: unstable password store API (resolves "--password-id" references).
-# It is expected to become stable in 3.0.0. On 2.4 it does not exist, so we fall back
+# Planned stable in 3.0.0 (Werk #19370). On 2.4 it does not exist, so we fall back
 # to a plain "--password" option (the SSC must then pass params["password"].unsafe()).
 try:
     from cmk.password_store.v1_unstable import parser_add_secret_option, resolve_secret_option

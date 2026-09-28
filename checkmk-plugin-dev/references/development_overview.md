@@ -351,6 +351,8 @@ fi
 
 ### Spool Directory
 
+Details, file naming and atomic writes: `spool_directory.md`.
+
 External programs write agent output directly to files:
 - Linux: `/var/lib/check_mk_agent/spool/`
 - Windows: `C:\ProgramData\checkmk\agent\spool\`

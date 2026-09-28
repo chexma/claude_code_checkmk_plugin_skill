@@ -25,7 +25,7 @@ Scope: code that extends CheckMK (check plugins, rulesets, graphing, special age
 
 ## Which CheckMK Version?
 
-The core APIs (Check API V2, Rulesets API V1, Graphing API V1, Server-Side Calls V1) are **identical** in 2.4 and 2.5 — all templates below work unchanged on both versions. Only ask about the target version when the task touches one of these:
+The core APIs (Check API V2, Rulesets API V1, Graphing API V1, Server-Side Calls V1) are **identical** in 2.4 and 2.5 — all templates below work unchanged on both versions, except `bakery_plugin_v2.py` (2.5+, unstable). Only ask about the target version when the task touches one of these:
 
 | Area | Stable (2.4 and 2.5) | 2.5+ only (unstable) |
 |---|---|---|
@@ -38,7 +38,7 @@ The core APIs (Check API V2, Rulesets API V1, Graphing API V1, Server-Side Calls
 
 ### Stability and timeline
 
-This is the one place for the timeline. Reference files only link here.
+This is the one place for the timeline. Reference files only link here; templates carry a one-line note because they get copied out of the skill.
 
 - All `*_unstable` APIs above are **unstable** in 2.5 and may change incompatibly.
 - They are planned to become stable (renamed) in the **next major release, 3.0.0**. Werk #19370 corrects Werk #18600 here: there is no 2.6/2.7.
@@ -99,8 +99,8 @@ Place all plugins under `~/local/lib/python3/cmk_addons/plugins/<family_name>/`:
 ├── agent_based/       # Check plugins (agent & SNMP)
 ├── rulesets/          # Rule definitions
 ├── graphing/          # Metrics, graphs, perfometers
-├── server_side_calls/ # Special agent configs
-├── libexec/           # Special agent executables
+├── server_side_calls/ # Special agent / active check configs
+├── libexec/           # Special agent / active check executables
 ├── checkman/          # Man pages
 ├── bakery/            # Bakery plugins (2.5+, cmk.bakery.v2_unstable)
 └── inventory_ui/      # Inventory UI views (2.5+, cmk.inventory_ui.v1_unstable)

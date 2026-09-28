@@ -101,7 +101,7 @@ Conventions that apply to both versions:
 
 ## New in `unstable` (CheckMK 2.5.0)
 
-Compared with the v1 spec of the same build (checked on 2.5.0p14): 50 extra endpoints, nothing removed. Edition availability is part of each endpoint's description; **"commercial"** means not available in Checkmk Raw/Community.
+Compared with the v1 spec of the same build (checked on 2.5.0p14): 50 extra endpoints, nothing removed. Edition availability is part of each endpoint's description; **"commercial"** means not available in the Community edition (formerly Raw).
 
 ### Dashboards (14 endpoints)
 

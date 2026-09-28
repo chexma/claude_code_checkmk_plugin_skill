@@ -31,6 +31,9 @@ from cmk.agent_based.v2 import (
     SimpleSNMPSection,
     SNMPSection,
     SNMPTree,
+    OIDEnd,        # Row index (OID suffix) as a column
+    OIDBytes,      # Column value as list[int] (binary data)
+    OIDCached,     # Column cached across check cycles (rarely changing)
     Service,
     Result,
     State,
@@ -38,6 +41,7 @@ from cmk.agent_based.v2 import (
     check_levels,
     render,
     StringTable,
+    StringByteTable,  # string_table type when OIDBytes is used
     # Detection functions
     startswith,
     endswith,
@@ -51,6 +55,7 @@ from cmk.agent_based.v2 import (
     not_contains,
     not_matches,
     not_exists,
+    not_equals,
     # Combinators
     all_of,
     any_of,
@@ -162,6 +167,18 @@ SNMPTree(
 - `.0` suffix = single scalar value (leaf)
 - No `.0` suffix = table column (all rows)
 
+### Special OID Columns
+
+| Column | Result in string_table |
+|--------|------------------------|
+| `OIDEnd()` | Index part of the OID (e.g. ifIndex) - use it to correlate tables that lack an index column (ifXTable) |
+| `OIDBytes("2")` | Value as `list[int]` (MAC addresses, binary data); table type becomes `StringByteTable` |
+| `OIDCached("2")` | Value fetched from cache if available (for static data) |
+
+```python
+SNMPTree(base=".1.3.6.1.2.1.31.1.1.1", oids=[OIDEnd(), "1", "18"])  # ifIndex, ifName, ifAlias
+```
+
 ## SNMP Detection Functions
 
 ### Detection Function Reference
@@ -171,11 +188,11 @@ SNMPTree(
 | `startswith(oid, text)` | Value starts with text | `not_startswith` |
 | `endswith(oid, text)` | Value ends with text | `not_endswith` |
 | `contains(oid, text)` | Value contains text | `not_contains` |
-| `equals(oid, text)` | Value equals text exactly | - |
+| `equals(oid, text)` | Value equals text exactly | `not_equals` |
 | `matches(oid, regex)` | Value matches regex | `not_matches` |
 | `exists(oid)` | OID exists (any value) | `not_exists` |
 
-All text comparisons are **case-insensitive**.
+All text comparisons are **case-insensitive** and use a full match: `matches()` must cover the whole value (use `.*` at the ends), `startswith`/`contains` etc. escape their text automatically.
 
 ### Basic Detection
 
@@ -448,8 +465,9 @@ cmk --snmptranslate mydevice01 > /tmp/translated
 ### Use Stored Walk for Simulation
 
 ```bash
-# Use stored walk instead of live SNMP
-cmk --snmpwalk-cache mydevice01
+# Use stored walk instead of live SNMP (~/var/check_mk/snmpwalks/mydevice01)
+cmk -v --usewalk --detect-plugins=device_setup mydevice01
+# equivalent: --snmp-backend stored-walk
 
 # Or configure in GUI: Setup > Hosts > Properties
 # SNMP > Simulate SNMP with stored walk
@@ -488,7 +506,7 @@ MIBs enable OID translation and provide documentation, but are **not required** 
 
 2. **Test detection manually**:
    ```bash
-   cmk -v --snmpget mydevice01 .1.3.6.1.2.1.1.1.0
+   cmk -v --snmpget .1.3.6.1.2.1.1.1.0 mydevice01   # OID first, then host(s)
    ```
 
 3. **Check case sensitivity**: Detection functions are case-insensitive

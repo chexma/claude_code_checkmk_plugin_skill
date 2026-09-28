@@ -21,6 +21,7 @@ def _agent_arguments(params, host_config):
         host_config: Host configuration object with:
             - host_config.name: Host name
             - host_config.primary_ip_config.address: IP address
+              (raises ValueError if the host has no IP address configured)
             - host_config.alias: Host alias
     
     Yields:
@@ -39,9 +40,13 @@ def _agent_arguments(params, host_config):
         args.extend(["--username", params["username"]])
     
     if "password" in params:
-        # Password object - use unsafe() to get plain text
-        # Consider using stdin for better security (see below)
-        args.extend(["--password", params["password"].unsafe()])
+        # params["password"] is a Secret (never a str). It only works inside
+        # command_arguments - NOT in stdin= or os.environ (both need a str).
+        # CheckMK 2.5 (recommended): pass the password-store reference; the agent
+        # resolves it with cmk.password_store.v1_unstable.resolve_secret_option
+        args.extend(["--password-id", params["password"]])
+        # CheckMK 2.4 (also works on 2.5): plaintext on the command line
+        # args.extend(["--password", params["password"].unsafe()])
     
     # Optional parameters
     if "timeout" in params:
@@ -57,36 +62,6 @@ def _agent_arguments(params, host_config):
         args.append("--no-piggyback")
     
     yield SpecialAgentCommand(command_arguments=args)
-
-
-# Alternative: Passwort via stdin (sicherer!)
-def _agent_arguments_secure(params, host_config):
-    """Alternative version with password via stdin (more secure)."""
-    args = [
-        "--hostname", host_config.primary_ip_config.address,
-    ]
-    
-    if "port" in params:
-        args.extend(["--port", str(params["port"])])
-    
-    if "username" in params:
-        args.extend(["--username", params["username"]])
-    
-    if "timeout" in params:
-        args.extend(["--timeout", str(params["timeout"])])
-    
-    if not params.get("verify_ssl", True):
-        args.append("--no-cert-check")
-    
-    # Password via stdin
-    stdin_data = None
-    if "password" in params:
-        stdin_data = params["password"].unsafe()
-    
-    yield SpecialAgentCommand(
-        command_arguments=args,
-        stdin=stdin_data,
-    )
 
 
 # Variable name MUST start with special_agent_

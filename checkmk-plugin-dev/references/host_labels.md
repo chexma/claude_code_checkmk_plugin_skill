@@ -15,6 +15,8 @@ from cmk.agent_based.v2 import AgentSection, HostLabel
 - `name`: Label key (e.g., `"my_plugin/version"`)
 - `value`: Label value (e.g., `"1.0"`)
 
+Labels for single services: `Service(item=..., labels=[ServiceLabel("my_plugin/role", "primary")])`.
+
 ## Implementation Patterns
 
 ### 1. Define Host Label Function
@@ -136,6 +138,7 @@ prefix/key: value
 
 ### Best Practices
 - **Use prefix**: Prefix all labels with plugin-specific namespace
+- **Never use `cmk/`**: That namespace is reserved for Checkmk's built-in labels
 - **Lowercase**: Use lowercase for keys
 - **No special characters**: Only alphanumeric, `/`, `-`, `_`
 - **No spaces**: Avoid spaces in keys and values
@@ -208,7 +211,7 @@ my_plugin/env:production          # Production environment
 ## Important Notes
 
 1. **Parse function must exist**: `host_label_function` receives output from `parse_function`
-2. **No access to params**: Host label function has no access to ruleset parameters
-3. **Only during discovery**: Labels are only detected during `cmk -II`
+2. **Params are optional**: Set `host_label_default_parameters` + `host_label_ruleset_name` (and `host_label_ruleset_type`) on the section; the function then takes `(params, section)`. Without them it takes only `section`
+3. **Only during discovery**: Labels are detected by service discovery (`cmk -I`, `cmk -II`, GUI or periodic discovery), not during normal checks
 4. **Idempotency**: Function should yield the same labels for the same input
 5. **Performance**: Function is called on every discovery - keep it lean

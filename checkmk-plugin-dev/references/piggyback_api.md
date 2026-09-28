@@ -106,7 +106,7 @@ def host_label_function(section):
     """Auto-generate host labels from piggyback data."""
     # Useful for dynamic host labeling
     if section.get("state"):
-        yield HostLabel("cmk/cloud_vm", "yes")
+        yield HostLabel("mycloud/vm", "yes")  # never use the reserved cmk/ namespace
         yield HostLabel("mycloud/state", section.get("state", "unknown"))
 
 
@@ -307,8 +307,11 @@ ls -la ~/tmp/check_mk/piggyback/
 # Content of a piggyback file
 cat ~/tmp/check_mk/piggyback/<target-host>/<source-host>
 
-# Piggyback sources for a host
-cmk --list-piggyback-sources <hostname>
+# Which sources deliver data for a host (one file per source)
+ls -la ~/tmp/check_mk/piggyback/<target-host>/
+
+# Status of the piggyback sources
+ls -la ~/tmp/check_mk/piggyback_sources/
 
 # Check agent output with piggyback
 cmk -d <source-host> | grep -A5 "<<<<"

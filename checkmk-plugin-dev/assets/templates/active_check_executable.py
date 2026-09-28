@@ -28,6 +28,15 @@ import sys
 import time
 from typing import Optional, Tuple
 
+# CheckMK 2.5+: unstable password store API (resolves "--password-id" references).
+# It is expected to become stable in 3.0.0. On 2.4 it does not exist, so we fall back
+# to a plain "--password" option (the SSC must then pass params["password"].unsafe()).
+try:
+    from cmk.password_store.v1_unstable import parser_add_secret_option, resolve_secret_option
+except ImportError:  # CheckMK 2.4
+    parser_add_secret_option = None
+    resolve_secret_option = None
+
 
 # =============================================================================
 # EXIT CODES
@@ -196,6 +205,7 @@ def check_http_service(
     warning: float = 1.0,
     critical: float = 5.0,
     expected_code: int = 200,
+    password: Optional[str] = None,
 ) -> Tuple[int, str, dict]:
     """
     Check HTTP service availability.
@@ -214,6 +224,8 @@ def check_http_service(
     try:
         request = urllib.request.Request(url)
         request.add_header("User-Agent", "CheckMK Active Check")
+        if password:
+            request.add_header("Authorization", f"Bearer {password}")
         
         with urllib.request.urlopen(request, timeout=timeout) as response:
             response_time = time.time() - start_time
@@ -337,7 +349,26 @@ Examples:
         help="String to expect in response (TCP mode)",
     )
     
+    # Secret: "--password" (plaintext) and, on 2.5+, "--password-id" (store reference)
+    if parser_add_secret_option is not None:
+        parser_add_secret_option(
+            parser, long="--password", help="API token (plaintext, for debugging)", required=False
+        )
+    else:
+        parser.add_argument("--password", help="API token")
+
     args = parser.parse_args()
+
+    password = None
+    if resolve_secret_option is not None:
+        if args.password is not None or args.password_id is not None:
+            try:
+                # reveal() only where the plaintext is actually needed
+                password = resolve_secret_option(args, "password").reveal()
+            except Exception as e:  # PasswordStoreError: unknown id / unreadable store
+                output_result(UNKNOWN, f"Cannot read password: {e}")
+    else:
+        password = args.password
     
     # Perform check
     if args.http:
@@ -350,6 +381,7 @@ Examples:
             warning=args.warning,
             critical=args.critical,
             expected_code=args.expected_code,
+            password=password,
         )
     else:
         status, message, perfdata = check_tcp_service(

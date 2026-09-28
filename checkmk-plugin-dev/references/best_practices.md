@@ -198,6 +198,9 @@ cmk -v --detect-plugins=<plugin> <hostname>
 
 # Full debug mode (shows stack traces on errors)
 cmk --debug --detect-plugins=<plugin> <hostname>
+
+# Check that all plug-ins (check, ruleset, graphing, ...) can be loaded
+cmk-validate-plugins        # -d/--debug: raise exceptions instead of logging
 ```
 
 ### Crash Report Analysis
@@ -205,10 +208,8 @@ cmk --debug --detect-plugins=<plugin> <hostname>
 When a check crashes, CheckMK creates a crash report:
 
 ```bash
-# View crash report details by ID
-cmk --crash-report-details <crash-id>
-
-# Direct crash info file location
+# Crash reports are opened in the GUI (link in the crashed service's output);
+# there is no cmk option to print them. Files on disk:
 cat /opt/omd/sites/<site>/var/check_mk/crashes/check/<crash-id>/crash.info
 
 # List recent crashes
@@ -240,7 +241,8 @@ cmk -v --detect-plugins=mycheck myhostname
 # 6. Debug mode for errors
 cmk --debug --detect-plugins=mycheck myhostname
 
-# 7. Activate changes
+# 7. Activate changes (since 2.5 a core restart also detects changed
+#    plugin files, Werk #17939)
 cmk -R
 ```
 
@@ -347,7 +349,7 @@ def discover_mycheck(section):
 | `register.agent_section()` | `AgentSection(...)` class |
 | `register.check_plugin()` | `CheckPlugin(...)` class |
 | `register.snmp_section()` | `SimpleSNMPSection(...)` or `SNMPSection(...)` |
-| `local/lib/check_mk/base/plugins/agent_based/` | `local/lib/python3/cmk_addons/plugins/<family>/agent_based/` |
+| `local/lib/python3/cmk/base/plugins/agent_based/` (formerly via the `local/lib/check_mk` symlink, removed in 2.5 — Werk #17969) | `local/lib/python3/cmk_addons/plugins/<family>/agent_based/` |
 | `from .agent_based_api.v1 import *` | `from cmk.agent_based.v2 import ...` |
 | `type_defs` module | Types in `cmk.agent_based.v2` |
 | `SNMPDetect` class | Detection functions (`startswith`, `contains`, etc.) |
@@ -369,10 +371,10 @@ Available at: `github.com/Checkmk/checkmk/tree/master/doc/treasures/migration_he
 # List unpackaged files
 mkp find
 
-# Create package
-mkp template mycheck > /tmp/mycheck.json
-# Edit the JSON file
-mkp package /tmp/mycheck.json
+# Create package (mkp template prints to stdout)
+mkp template mycheck > ~/tmp/mycheck.manifest
+# Edit the manifest (remove unrelated files!)
+mkp package ~/tmp/mycheck.manifest
 
 # Install package
 mkp add mycheck-1.0.0.mkp
@@ -381,25 +383,21 @@ mkp add mycheck-1.0.0.mkp
 mkp enable mycheck 1.0.0
 ```
 
-Package JSON structure:
-```json
-{
-    "name": "mycheck",
-    "version": "1.0.0",
-    "version.min_required": "2.3.0",
-    "version.usable_until": "2.5.99",
-    "title": "My Check Plugin",
-    "author": "Your Name",
-    "description": "Description of the plugin",
-    "files": {
-        "cmk_addons_plugins": [
-            "mycheck/agent_based/mycheck.py",
-            "mycheck/rulesets/mycheck.py",
-            "mycheck/graphing/mycheck.py"
-        ],
-        "agents": [
-            "plugins/mycheck"
-        ]
-    }
-}
+Manifest structure (a **Python literal**, not JSON — `None`, not `null`; all keys below are required except `version.usable_until`):
+```python
+{'author': 'Your Name',
+ 'description': 'Description of the plugin',
+ 'download_url': 'https://github.com/you/mycheck',
+ 'files': {'agents': ['plugins/mycheck'],
+           'cmk_addons_plugins': ['mycheck/agent_based/mycheck.py',
+                                  'mycheck/graphing/mycheck.py',
+                                  'mycheck/rulesets/mycheck.py']},
+ 'name': 'mycheck',
+ 'title': 'My Check Plugin',
+ 'version': '1.0.0',
+ 'version.min_required': '2.4.0',
+ 'version.packaged': '2.5.0p14',
+ 'version.usable_until': None}
 ```
+
+Leave `version.usable_until` at `None` unless you know the package breaks on a later version — `mkp disable-outdated` disables packages past that version on upgrade. See `mkp_packaging.md`.

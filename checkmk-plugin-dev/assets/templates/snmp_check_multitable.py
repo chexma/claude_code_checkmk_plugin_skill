@@ -22,6 +22,7 @@ from cmk.agent_based.v2 import (
     DiscoveryResult,
     SNMPSection,  # Note: SNMPSection, not SimpleSNMPSection
     SNMPTree,
+    OIDEnd,
     Service,
     Result,
     State,
@@ -242,14 +243,15 @@ def check_multi_table_interfaces(
     # Speed Check
     # -------------------------------------------------------------------------
     if interface.speed > 0:
-        speed_text = render.networkbandwidth(interface.speed)
+        # ifSpeed is bits/s; render.nicspeed() expects bytes/s
+        speed_text = render.nicspeed(interface.speed / 8)
         
         # Check for speed change since discovery
         discovered_speed = params.get("discovered_speed", 0)
         if discovered_speed and interface.speed != discovered_speed:
             yield Result(
                 state=State.WARN,
-                summary=f"Speed changed: {speed_text} (was {render.networkbandwidth(discovered_speed)})"
+                summary=f"Speed changed: {speed_text} (was {render.nicspeed(discovered_speed / 8)})"
             )
         else:
             yield Result(state=State.OK, notice=f"Speed: {speed_text}")
@@ -260,28 +262,33 @@ def check_multi_table_interfaces(
     value_store = get_value_store()
     now = time.time()
     
-    try:
-        in_rate = get_rate(
-            value_store,
-            f"in_octets.{item}",
-            now,
-            interface.in_octets,
-        )
-        out_rate = get_rate(
-            value_store,
-            f"out_octets.{item}",
-            now,
-            interface.out_octets,
-        )
+    # Compute ALL rates before giving up: a GetRateError on the first counter
+    # must not prevent the other counters from being initialized.
+    counters = {
+        "in_octets": interface.in_octets,
+        "out_octets": interface.out_octets,
+        "in_errors": interface.in_errors,
+        "out_errors": interface.out_errors,
+    }
+    rates = {}
+    for key, counter in counters.items():
+        try:
+            rates[key] = get_rate(value_store, f"{key}.{item}", now, counter)
+        except GetRateError:
+            pass
+    
+    if "in_octets" in rates and "out_octets" in rates:
+        in_rate, out_rate = rates["in_octets"], rates["out_octets"]
         
-        # Convert to bits/sec
-        in_bps = in_rate * 8
-        out_bps = out_rate * 8
-        
+        # render.networkbandwidth() expects BYTES/s (multiplies by 8 itself)
         yield Result(
             state=State.OK,
-            summary=f"In: {render.networkbandwidth(in_bps)}, Out: {render.networkbandwidth(out_bps)}"
+            summary=f"In: {render.networkbandwidth(in_rate)}, Out: {render.networkbandwidth(out_rate)}"
         )
+        
+        # Metrics and utilization in bits/s (same unit as ifSpeed)
+        in_bps = in_rate * 8
+        out_bps = out_rate * 8
         
         yield Metric("if_in_bps", in_bps)
         yield Metric("if_out_bps", out_bps)
@@ -292,7 +299,7 @@ def check_multi_table_interfaces(
             out_util = (out_bps / interface.speed) * 100
             
             # Check utilization thresholds
-            util_levels = params.get("utilization_levels", (80.0, 90.0))
+            util_levels = params.get("utilization_levels", ("fixed", (80.0, 90.0)))
             
             yield from check_levels(
                 max(in_util, out_util),
@@ -301,31 +308,17 @@ def check_multi_table_interfaces(
                 render_func=render.percent,
                 label="Utilization",
             )
-        
-    except GetRateError:
+    else:
         yield Result(state=State.OK, notice="Traffic: collecting data...")
     
     # -------------------------------------------------------------------------
     # Error Rates
     # -------------------------------------------------------------------------
-    try:
-        in_err_rate = get_rate(
-            value_store,
-            f"in_errors.{item}",
-            now,
-            interface.in_errors,
-        )
-        out_err_rate = get_rate(
-            value_store,
-            f"out_errors.{item}",
-            now,
-            interface.out_errors,
-        )
-        
-        total_err_rate = in_err_rate + out_err_rate
+    if "in_errors" in rates and "out_errors" in rates:
+        total_err_rate = rates["in_errors"] + rates["out_errors"]
         
         if total_err_rate > 0:
-            error_levels = params.get("error_levels", (1.0, 10.0))  # errors/sec
+            error_levels = params.get("error_levels", ("fixed", (1.0, 10.0)))  # errors/sec
             
             yield from check_levels(
                 total_err_rate,
@@ -334,9 +327,6 @@ def check_multi_table_interfaces(
                 render_func=lambda x: f"{x:.2f}/s",
                 label="Errors",
             )
-        
-    except GetRateError:
-        pass  # No error rate yet
 
 
 # =============================================================================
@@ -348,15 +338,13 @@ snmp_section_multi_table_interfaces = SNMPSection(
     parse_function=parse_multi_table_interfaces,
     
     # Detection criteria
-    detect=all_of(
-        # Adapt to your device!
-        startswith(".1.3.6.1.2.1.1.1.0", "MyDevice"),
-        # Or use a more generic detection:
-        # any_of(
-        #     contains(".1.3.6.1.2.1.1.2.0", ".1.3.6.1.4.1.9."),    # Cisco
-        #     contains(".1.3.6.1.2.1.1.2.0", ".1.3.6.1.4.1.2636."), # Juniper
-        # ),
-    ),
+    # Adapt to your device! (all_of()/any_of() need at least TWO specs)
+    detect=startswith(".1.3.6.1.2.1.1.1.0", "MyDevice"),
+    # Or use a more generic detection:
+    # detect=any_of(
+    #     contains(".1.3.6.1.2.1.1.2.0", ".1.3.6.1.4.1.9."),    # Cisco
+    #     contains(".1.3.6.1.2.1.1.2.0", ".1.3.6.1.4.1.2636."), # Juniper
+    # ),
     
     # Fetch from multiple tables - ORDER MATTERS!
     # Parse function receives tables in this exact order
@@ -377,9 +365,9 @@ snmp_section_multi_table_interfaces = SNMPSection(
         SNMPTree(
             base=".1.3.6.1.2.1.31.1.1.1",
             oids=[
-                "1",   # ifName (correlate with ifIndex via row position)
-                "1",   # ifName  
-                "18",  # ifAlias
+                OIDEnd(),  # ifIndex (ifXTable has no index column - use the OID suffix)
+                "1",       # ifName
+                "18",      # ifAlias
             ],
         ),
         # Table 3: Counters (could also use 64-bit counters from ifXTable)
@@ -409,8 +397,9 @@ check_plugin_multi_table_interfaces = CheckPlugin(
     check_function=check_multi_table_interfaces,
     check_default_parameters={
         "expected_status": 1,  # up
-        "utilization_levels": (80.0, 90.0),
-        "error_levels": (1.0, 10.0),
+        # check_levels() format - plain (warn, crit) tuples raise TypeError!
+        "utilization_levels": ("fixed", (80.0, 90.0)),
+        "error_levels": ("fixed", (1.0, 10.0)),
     },
     # If you create a ruleset, reference it here:
     # check_ruleset_name="multi_table_interfaces",
@@ -485,8 +474,8 @@ grep "1.3.6.1.2.1.2.2.1" ~/var/check_mk/snmpwalks/mydevice
 # Check ifXTable
 grep "1.3.6.1.2.1.31.1.1.1" ~/var/check_mk/snmpwalks/mydevice
 
-# Test with simulation
-cmk --snmpwalk-cache mydevice
+# Test with simulation (stored walk)
+cmk -v --usewalk --detect-plugins=multi_table_interfaces mydevice
 
 # Discovery
 cmk -vI --detect-plugins=multi_table_interfaces mydevice

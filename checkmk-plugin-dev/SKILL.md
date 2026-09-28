@@ -34,9 +34,10 @@ The core APIs (Check API V2, Rulesets API V1, Graphing API V1, Server-Side Calls
 | Reading stored secrets in server-side programs | — (use `Password` form spec + `.unsafe()`) | `references/password_store_api.md` (`v1_unstable`) |
 | Crash reports / call-to-call persistence for special agents | — | `references/server_side_programs_api.md` (`v1_unstable`) |
 | Custom HW/SW inventory tree visualizations | — | `references/inventory_ui_api.md` (`v1_unstable`) |
+| Custom DCD connector (commercial editions) | — | `references/dcd_connector_api.md` (unversioned) |
 | Automating CheckMK via REST API (dashboards, availability, relays, OTel, …) | `references/rest_api.md` → `v1` | `references/rest_api.md` → `unstable` endpoints |
 
-The three 2.5-only APIs are marked `unstable` upstream (stabilizes in 2.6, legacy removed in 2.7 per Werk #18600) — mention this to the user before recommending them for production use. The same applies to REST API endpoints under `/api/unstable/`: they may change or disappear without notice.
+The three 2.5-only APIs are marked `unstable` upstream (planned to become stable in the next major release, 3.0.0; the legacy APIs they replace are deprecated in 3.0.0 and removed in 3.1.0 (Werk #18600, corrected by Werk #19370 — there is no 2.6/2.7)) — mention this to the user before recommending them for production use. The same applies to REST API endpoints under `/api/unstable/`: they may change or disappear without notice.
 
 ## Choose Your Path
 
@@ -86,8 +87,12 @@ Place all plugins under `~/local/lib/python3/cmk_addons/plugins/<family_name>/`:
 ├── graphing/          # Metrics, graphs, perfometers
 ├── server_side_calls/ # Special agent configs
 ├── libexec/           # Special agent executables
-└── checkman/          # Man pages
+├── checkman/          # Man pages
+├── bakery/            # Bakery plugins (2.5+, cmk.bakery.v2_unstable)
+└── inventory_ui/      # Inventory UI views (2.5+, cmk.inventory_ui.v1_unstable)
 ```
+
+Since 2.5 the symlinks `~/lib/check_mk` and `~/local/lib/check_mk` are gone (Werk #17969). Always use the real paths below `~/local/lib/python3/`.
 
 ## Variable Naming (CRITICAL)
 
@@ -98,9 +103,12 @@ Plugins are discovered by variable name prefix:
 | `agent_section_` | Agent sections |
 | `snmp_section_` | SNMP sections |
 | `check_plugin_` | Check plugins |
+| `inventory_plugin_` | Inventory plugins |
 | `rule_spec_` | Ruleset specifications |
-| `metric_`, `graph_`, `perfometer_` | Graphing elements |
+| `metric_`, `graph_`, `perfometer_`, `translation_` | Graphing elements |
 | `special_agent_`, `active_check_` | Server-side calls |
+| `bakery_plugin_` | Bakery plugins (2.5+, v2_unstable) |
+| `node_` | Inventory UI nodes (2.5+) |
 
 ## Quick Start Example
 
@@ -193,6 +201,7 @@ omd restart apache                             # After ruleset/graphing changes
 - `references/best_practices.md` - Testing, debugging, crash analysis
 - `references/checkman_manpages.md` - Man page format
 - `references/rest_api.md` - CheckMK REST API client: v1 vs **unstable** (2.5), auth, new endpoints
+- `references/dcd_connector_api.md` - **2.5, commercial**: Dynamic Configuration Daemon connectors
 
 ## Templates
 
@@ -241,6 +250,7 @@ See `references/best_practices.md` for debugging, crash analysis, and common err
 
 Quick fixes:
 - **Plugin not discovered**: Check variable naming prefixes (see Variable Naming above)
+- **Check that all plugins load**: `cmk-validate-plugins` (add `-d` to raise the first exception)
 - **TypeError in check function**: Verify `check_levels()` format (see check_levels() Format above)
 - **Ruleset not visible**: Run `omd restart apache` after changes
 - **Import errors**: Ensure correct API version imports (`cmk.agent_based.v2`, not `.v1`)

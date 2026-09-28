@@ -65,6 +65,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 # Config directory (set by agent)
@@ -381,18 +382,15 @@ if __name__ == "__main__":
 Async plugins run in the background:
 
 ```bash
-# /usr/lib/check_mk_agent/plugins/86400/myasync
 #!/bin/bash
+# /usr/lib/check_mk_agent/plugins/86400/myasync
 
-# Marker for async
-# MK_ASYNC=1
-
-echo "<<<myasync:cached($(date +%s),86400)>>>"
+echo "<<<myasync>>>"
 # expensive_command_here
 find /data -type f -size +100M 2>/dev/null | wc -l
 ```
 
-The `cached(timestamp,max_age)` in the section header signals caching to the agent.
+Placing the plugin in an interval directory is all that is needed: the agent runs it asynchronously and rewrites each header to `<<<myasync:cached(mtime,interval)>>>` itself. Headers that already contain `:cached(...)` are left untouched, so only write it yourself if you manage caching in the plugin.
 
 ## Configurable Plugins
 
@@ -475,13 +473,20 @@ rule_spec_agent_config_myapp = AgentConfig(
 
 ### Bakery Plugin (Enterprise)
 
+| API | Location | Status |
+|-----|----------|--------|
+| `cmk.base.plugins.bakery.bakery_api.v1` (documented v1 API) | `~/local/lib/python3/cmk/base/cee/plugins/bakery/` | Still loaded in 2.5 for compatibility; deprecated in 3.0.0, removed in 3.1.0 (Werks #18600/#19370) |
+| `cmk.bakery.v2_unstable` (2.5+) | `~/local/lib/python3/cmk_addons/plugins/<family>/bakery/` | New family layout, API may still change |
+
+The old `~/local/lib/check_mk/...` path no longer exists (symlink removed in 2.5, Werk #17969). See `bakery_api.md` for both APIs in detail.
+
 ```python
 # ~/local/lib/python3/cmk/base/cee/plugins/bakery/myapp.py
 
 from pathlib import Path
 from typing import Any
 
-from cmk.base.cee.plugins.bakery.bakery_api.v1 import (
+from cmk.base.plugins.bakery.bakery_api.v1 import (
     OS,
     FileGenerator,
     Plugin,
@@ -610,8 +615,8 @@ ls -la /var/cache/check_mk/
 # Plugin permissions
 ls -la /usr/lib/check_mk_agent/plugins/
 
-# Plugin errors in agent log
-journalctl -u check-mk-agent
+# Agent service/controller logs (socket-activated units)
+journalctl -u 'check-mk-agent*' -u cmk-agent-ctl-daemon
 ```
 
 ## Best Practices

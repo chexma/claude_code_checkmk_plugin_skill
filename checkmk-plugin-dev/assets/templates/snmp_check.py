@@ -50,6 +50,7 @@ from cmk.agent_based.v2 import (
     not_contains,
     not_matches,
     not_exists,
+    not_equals,
     # Combinators
     all_of,
     any_of,
@@ -276,7 +277,7 @@ def check_system_resources(
     yield from check_levels(
         cpu_percent,
         metric_name="cpu_percent",
-        levels_upper=params.get("cpu_levels"),  # (warn, crit) tuple
+        levels_upper=params.get("cpu_levels"),  # ("fixed", (warn, crit)) or None
         render_func=render.percent,
         label="CPU",
     )
@@ -327,8 +328,9 @@ check_plugin_system_resources = CheckPlugin(
     check_function=check_system_resources,
     # Default parameters (can be overridden by ruleset)
     check_default_parameters={
-        "cpu_levels": (80.0, 90.0),      # warn at 80%, crit at 90%
-        "memory_levels": (70.0, 85.0),   # warn at 70%, crit at 85%
+        # check_levels() format - plain (warn, crit) tuples raise TypeError!
+        "cpu_levels": ("fixed", (80.0, 90.0)),      # warn at 80%, crit at 90%
+        "memory_levels": ("fixed", (70.0, 85.0)),   # warn at 70%, crit at 85%
     },
 )
 
@@ -381,32 +383,28 @@ def check_interface_traffic(item: str, section) -> CheckResult:
     value_store = get_value_store()
     now = time.time()
     
-    try:
-        # Calculate bytes/sec from counter
-        in_rate = get_rate(
-            value_store,
-            f"in_octets.{item}",
-            now,
-            data["in_octets"],
-        )
-        out_rate = get_rate(
-            value_store,
-            f"out_octets.{item}",
-            now,
-            data["out_octets"],
-        )
-    except GetRateError:
+    # Initialize ALL counters before returning: stopping at the first
+    # GetRateError would delay the second counter by one more check cycle.
+    rates = {}
+    for key in ("in_octets", "out_octets"):
+        try:
+            rates[key] = get_rate(value_store, f"{key}.{item}", now, data[key])
+        except GetRateError:
+            pass
+    if len(rates) < 2:
         yield Result(state=State.OK, summary="Collecting data...")
         return
+    in_rate, out_rate = rates["in_octets"], rates["out_octets"]
     
-    # Convert to bits/sec for display
-    in_bps = in_rate * 8
-    out_bps = out_rate * 8
-    
+    # render.networkbandwidth() expects BYTES/s (it multiplies by 8 itself)
     yield Result(
         state=State.OK,
-        summary=f"In: {render.networkbandwidth(in_bps)}, Out: {render.networkbandwidth(out_bps)}"
+        summary=f"In: {render.networkbandwidth(in_rate)}, Out: {render.networkbandwidth(out_rate)}"
     )
+    
+    # Metrics if_in_bps/if_out_bps are defined in bits/s
+    in_bps = in_rate * 8
+    out_bps = out_rate * 8
     
     yield Metric("if_in_bps", in_bps)
     yield Metric("if_out_bps", out_bps)
@@ -493,8 +491,9 @@ cat ~/var/check_mk/snmpwalks/mydevice
 # Translate OIDs (requires MIBs)
 cmk --snmptranslate mydevice > /tmp/translated
 
-# Test with simulation (uses stored walk)
-# Configure in GUI: Setup > Hosts > mydevice > SNMP > Simulate with stored walk
+# Test with simulation (uses stored walk from ~/var/check_mk/snmpwalks/)
+cmk -v --usewalk --detect-plugins=device_setup mydevice
+# Or permanently in GUI: host properties > Simulate SNMP with stored walk
 
 # Service discovery
 cmk -vI --detect-plugins=device_setup mydevice

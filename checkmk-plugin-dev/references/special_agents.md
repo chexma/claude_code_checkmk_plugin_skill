@@ -169,6 +169,7 @@ def _agent_arguments(params, host_config):
     host_config: Host configuration object with:
         - host_config.name: Host name
         - host_config.primary_ip_config.address: IP address
+          (raises ValueError if the host has no IP address)
         - host_config.alias: Host alias
     """
     args = [
@@ -183,7 +184,9 @@ def _agent_arguments(params, host_config):
         args.extend(["--username", params["username"]])
     
     if "password" in params:
-        # Password is an object, use unsafe() to get plain text
+        # params["password"] is a Secret. .unsafe() returns another Secret that
+        # CheckMK renders as plaintext in the argv (works on 2.4 and 2.5).
+        # On 2.5 prefer ["--password-id", params["password"]] - see below.
         args.extend(["--password", params["password"].unsafe()])
     
     if "timeout" in params:
@@ -310,36 +313,41 @@ cmk -v --detect-plugins=myagent myhost
 
 ## Password Handling Security
 
-**Warning:** Passwords passed as command line arguments are visible in the process table!
+**Warning:** `params["password"].unsafe()` puts the plaintext into the command line — it is visible in the process table and in the generated configuration.
 
-Mitigate with one of:
+`params["password"]` is a `cmk.server_side_calls.v1.Secret` (a surrogate, not a `str`). It can **only** be used inside `command_arguments`:
 
-1. **Environment variables:**
+| In `command_arguments` | Executable receives | Versions |
+|---|---|---|
+| `params["password"]` | `<id>:<store_file>` (reference, no plaintext) | 2.4, 2.5 |
+| `params["password"].unsafe()` | the plaintext | 2.4, 2.5 |
+| `params["password"].unsafe("user:%s")` | the plaintext, formatted | 2.4, 2.5 |
+
+**Do not** pass it via `stdin=` (typed `str | None`, passed through unchanged — the agent never gets the password) or via `os.environ` in the server-side calls function (`TypeError`, and the variable would never reach the agent process anyway).
+
+### Recommended on 2.5: password-store reference
+
 ```python
-import os
-
-def _agent_arguments(params, host_config):
-    # In server_side_calls
-    os.environ["MYAGENT_PASSWORD"] = params["password"].unsafe()
-    yield SpecialAgentCommand(command_arguments=args)
-
-# In agent executable
-password = os.environ.get("MYAGENT_PASSWORD")
+# server_side_calls/special_agent.py
+if "password" in params:
+    args.extend(["--password-id", params["password"]])
 ```
 
-2. **Stdin:**
 ```python
-# In server_side_calls
-yield SpecialAgentCommand(
-    command_arguments=args,
-    stdin=params["password"].unsafe(),
-)
+# libexec/agent_myagent
+from cmk.password_store.v1_unstable import parser_add_secret_option, resolve_secret_option
 
-# In agent executable
-password = sys.stdin.read().strip()
+parser_add_secret_option(parser, long="--password", help="API password", required=False)
+args = parser.parse_args()
+# creates --password (plaintext, for debugging) and --password-id (store reference)
+if args.password is not None or args.password_id is not None:
+    password = resolve_secret_option(args, "password").reveal()
 ```
 
-3. **Python module setproctitle:**
+`cmk.password_store.v1_unstable` is unstable (expected stable in 3.0.0). Hyphenated option names like `"api-token"` need 2.5.0p13+ (Werk #22275). Details: `password_store_api.md`. To support 2.4 as well, wrap the import in `try/except ImportError`, fall back to a plain `--password` option and use `.unsafe()` in the 2.4 SSC (see `assets/templates/datasource_complete.py`).
+
+### Hide the process title
+
 ```python
 # In agent executable
 try:
@@ -462,8 +470,9 @@ def _agent_arguments(params, host_config):
 
 ```python
 Topic.APPLICATIONS           # Application monitoring
+Topic.CACHING_MESSAGE_QUEUES # Caching / message queues
 Topic.CLOUD                  # Cloud monitoring
-Topic.CONFIGURATION_MANAGEMENT  # Config management
+Topic.CONFIGURATION_DEPLOYMENT  # Configuration & deployment
 Topic.DATABASES              # Database monitoring
 Topic.ENVIRONMENTAL          # Environment/sensors
 Topic.GENERAL               # General / Various
@@ -610,7 +619,8 @@ cmk -vI --detect-plugins=myagent myhost --debug
 | `<family>/server_side_calls/` | Call configuration |
 | `<family>/rulesets/` | Rule configuration |
 | `<family>/agent_based/` | Check plugins for the data |
-| `~/lib/python3/cmk/special_agents/` | Built-in special agents |
+| `~/lib/python3/cmk/plugins/<family>/special_agent(s)/` | Built-in special agents (2.5) |
+| `~/lib/python3/cmk/special_agents/v0_unstable` | Legacy helper library — deprecated in 3.0.0, removed in 3.1.0 |
 | `~/local/bin/` | Alternative location for executables (in PATH) |
 
 ## Complete Workflow
@@ -643,11 +653,57 @@ cmk -vI --detect-plugins=myagent myhost --debug
 2. **Make executable**: `chmod 755`
 3. **Use site user** for file creation (not root)
 4. **Name consistency**: `agent_myagent` → `rule_spec_myagent` → `special_agent_myagent`
-5. **Password via stdin** for better security
+5. **Password via store reference**: `--password-id` + `cmk.password_store.v1_unstable` on 2.5; `.unsafe()` only in `command_arguments` on 2.4 (never `stdin`/env)
 6. **Always yield** `SpecialAgentCommand` (even with empty args)
 7. **String conversion**: All command arguments must be strings
 8. **Error handling**: Write errors to stderr, exit with non-zero code
 9. **Restart Apache** after ruleset changes: `omd restart apache`
+
+## Server-Side Calls API Reference (`cmk.server_side_calls.v1`)
+
+| Name | Notes |
+|---|---|
+| `SpecialAgentConfig(*, name, parameter_parser, commands_function)` | Variable prefix `special_agent_` |
+| `SpecialAgentCommand(*, command_arguments: Sequence[str \| Secret], stdin: str \| None = None)` | `stdin` only for large non-secret input |
+| `noop_parser` | Returns params unchanged |
+| `HostConfig` | `name`, `alias`, `ipv4_config`, `ipv6_config` (each `None` or `.address`/`.additional_addresses`), `primary_family`, `primary_ip_config` (raises `ValueError` without IP), `macros` |
+| `Secret` | Surrogate for a `Password` value; `.unsafe(template="%s")` |
+| `EnvProxy`, `URLProxy(url=...)`, `NoProxy` | Parsed values of the `Proxy` form spec — branch with `match`/`isinstance` |
+| `replace_macros(value, macros)` | Expand `$HOSTNAME$` etc. in user strings: `replace_macros(params["url"], host_config.macros)` |
+
+```python
+from cmk.server_side_calls.v1 import EnvProxy, NoProxy, URLProxy
+
+match params.get("proxy"):
+    case URLProxy(url=url):
+        args += ["--proxy", url]
+    case NoProxy():
+        args += ["--proxy", "NO_PROXY"]
+    case EnvProxy() | None:
+        pass  # use environment settings
+```
+
+## 2.5 Executable Idiom (as used by shipped agents)
+
+Shipped 2.5 agents (e.g. `jira`, `datadog`, `storeonce4x`) combine the new unstable helpers instead of the legacy `cmk.special_agents.v0_unstable` / `cmk.utils.password_store` (deprecated in 3.0.0, removed in 3.1.0; Werk #18600, corrected by Werk #19370):
+
+```python
+from cmk.password_store.v1_unstable import parser_add_secret_option, resolve_secret_option
+from cmk.server_side_programs.v1_unstable import report_agent_crashes, vcrtrace
+
+@report_agent_crashes("myagent", "1.0.0")
+def main() -> int:
+    parser = argparse.ArgumentParser("agent_myagent")
+    parser.add_argument("--vcrtrace", action=vcrtrace())
+    parser_add_secret_option(parser, long="--password", help="API password", required=True)
+    args = parser.parse_args()
+    password = resolve_secret_option(args, "password").reveal()
+    ...
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+```
 
 ## Related Topics (CheckMK 2.5+)
 

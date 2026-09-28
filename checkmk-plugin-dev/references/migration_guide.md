@@ -439,7 +439,10 @@ cmk -v --detect-plugins=mycheck testhost
 
 # Restart services
 omd restart apache
-cmk -R
+cmk -R   # since 2.5 a core restart also detects changed plugin files (Werk #17939)
+
+# Verify all plug-ins load
+cmk-validate-plugins
 ```
 
 ### Step 5: Remove Legacy Files

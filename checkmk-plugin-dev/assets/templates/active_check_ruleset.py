@@ -11,13 +11,12 @@ The variable name MUST start with "rule_spec_" prefix.
 The "name" parameter must match the ActiveCheckConfig name.
 """
 
-from cmk.rulesets.v1 import Help, Label, Title
+from cmk.rulesets.v1 import Help, Label, Message, Title
 from cmk.rulesets.v1.form_specs import (
     # Containers
     Dictionary,
     DictElement,
     List,
-    Tuple,
     CascadingSingleChoice,
     CascadingSingleChoiceElement,
     # Basic types
@@ -53,8 +52,7 @@ rule_spec_myservice = ActiveCheck(
     title=Title("My Custom Service Check"),
     
     # Topic determines where rule appears in Setup menu
-    # Options: GENERAL, NETWORKING, APPLICATIONS, OPERATING_SYSTEM, 
-    #          STORAGE, VIRTUALIZATION, CLOUD, ENVIRONMENTAL, PERIPHERALS
+    # Full Topic list: see references/rulesets_api.md
     topic=Topic.NETWORKING,
     
     # Help text shown at top of rule form
@@ -287,13 +285,15 @@ rule_spec_myservice_advanced = ActiveCheck(
                                         parameter_form=SingleChoice(
                                             title=Title("Expected status"),
                                             elements=[
-                                                SingleChoiceElement("200", Title("200 OK")),
-                                                SingleChoiceElement("301", Title("301 Redirect")),
-                                                SingleChoiceElement("302", Title("302 Redirect")),
-                                                SingleChoiceElement("401", Title("401 Unauthorized")),
-                                                SingleChoiceElement("403", Title("403 Forbidden")),
+                                                SingleChoiceElement("code_200", Title("200 OK")),
+                                                SingleChoiceElement("code_301", Title("301 Redirect")),
+                                                SingleChoiceElement("code_302", Title("302 Redirect")),
+                                                SingleChoiceElement("code_401", Title("401 Unauthorized")),
+                                                SingleChoiceElement("code_403", Title("403 Forbidden")),
                                             ],
-                                            prefill=DefaultValue("200"),
+                                            # Element names must be valid Python identifiers
+                                            # ("200" raises ValueError) - strip "code_" in the SSC
+                                            prefill=DefaultValue("code_200"),
                                         ),
                                     ),
                                 },
@@ -352,7 +352,7 @@ rule_spec_myservice_auth = ActiveCheck(
                     custom_validate=(
                         validators.MatchRegex(
                             regex=r"^https?://",
-                            error_msg=Title("URL must start with http:// or https://"),
+                            error_msg=Message("URL must start with http:// or https://"),
                         ),
                     ),
                 ),

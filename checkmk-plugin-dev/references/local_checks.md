@@ -278,7 +278,7 @@ Use existing metric names for automatic units and Perf-O-Meters:
 | `mem_used_percent` | % | `mem_used_percent=75;80;90` |
 | `cpu_utilization` | % | `cpu_utilization=45;80;90` |
 
-See `~/lib/python3/cmk/plugins/collection/graphing/` for all available metrics.
+See `~/lib/python3/cmk/plugins/*/graphing/` for all available metrics (spread over many plugin families, e.g. `mem_used_percent` is in `plugins/memory/graphing/`).
 
 ## Debugging
 

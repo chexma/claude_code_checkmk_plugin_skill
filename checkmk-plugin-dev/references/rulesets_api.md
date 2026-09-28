@@ -12,7 +12,7 @@ from cmk.rulesets.v1.form_specs import (
     Dictionary,
     DictElement,
     List,
-    Tuple,
+    # (no Tuple in v1 — use a Dictionary with required DictElements)
     
     # Basic types
     String,
@@ -37,10 +37,8 @@ from cmk.rulesets.v1.form_specs import (
     DefaultValue,
     InputHint,
     
-    # Validators
-    NumberInRange,
-    LengthInRange,
-    MatchRegex,
+    # Validators live in a submodule: validators.NumberInRange(...), validators.LengthInRange(...), ...
+    validators,
 )
 
 from cmk.rulesets.v1.rule_specs import (
@@ -83,17 +81,49 @@ rule_spec_myagent = SpecialAgent(
 )
 ```
 
+### All Rule Spec Types (`cmk.rulesets.v1.rule_specs`)
+All take `name`, `title`, `topic`, `parameter_form` (callable returning a `Dictionary`), optional `help_text`, `is_deprecated`. Variable prefix is always `rule_spec_`.
+
+| Class | Used for | Extra args |
+|-------|----------|------------|
+| `CheckParameters` | Check plugin params (`check_ruleset_name`) | `condition=HostCondition()` / `HostAndItemCondition(item_title=..., item_form=...)`, `create_enforced_service=True` |
+| `DiscoveryParameters` | `discovery_ruleset_name` | — |
+| `InventoryParameters` | Inventory plugin params | — |
+| `EnforcedService` | Enforced service only (no check params rule) | `condition=...`; `parameter_form` may be `None` |
+| `SpecialAgent` | Special agent (`server_side_calls`) | — |
+| `ActiveCheck` | Active check (`server_side_calls`) | — |
+| `AgentConfig` | Agent bakery config | — |
+| `NotificationParameters` | Notification plugin params (discovered since 2.5, Werk #17884) | — |
+| `SNMP`, `AgentAccess`, `Host` | Host-level config rules | `eval_type=EvalType.MERGE` or `EvalType.ALL` |
+| `Service` | Generic service-level rule | `eval_type=...`, `condition=HostCondition()` / `HostAndServiceCondition()` |
+
+`CheckParameters` automatically creates the matching "Enforced services" rule (`create_enforced_service=True`), so a separate `EnforcedService` is only needed for checks without a parameter ruleset.
+
 ### Topic Options
 ```python
-Topic.GENERAL           # General / Various
-Topic.APPLICATIONS      # Applications
-Topic.CLOUD             # Cloud
-Topic.DATABASES         # Databases
-Topic.ENVIRONMENTAL     # Environmental
-Topic.NETWORKING        # Networking
-Topic.OPERATING_SYSTEM  # Operating System
-Topic.STORAGE           # Storage
-Topic.VIRTUALIZATION    # Virtualization
+Topic.APPLICATIONS
+Topic.CACHING_MESSAGE_QUEUES
+Topic.CLOUD
+Topic.CONFIGURATION_DEPLOYMENT
+Topic.DATABASES
+Topic.ENVIRONMENTAL
+Topic.GENERAL
+Topic.LINUX
+Topic.MIDDLEWARE
+Topic.NETWORKING
+Topic.NOTIFICATIONS
+Topic.OPERATING_SYSTEM
+Topic.PERIPHERALS
+Topic.POWER
+Topic.SERVER_HARDWARE
+Topic.STORAGE
+Topic.SYNTHETIC_MONITORING
+Topic.VIRTUALIZATION   # fixed in 2.5 (Werk #17804): broke quicksearch before
+Topic.WINDOWS
+
+# Or a custom topic:
+from cmk.rulesets.v1.rule_specs import CustomTopic
+topic=CustomTopic(title=Title("My Vendor"))
 ```
 
 ## Form Specification Elements
@@ -154,8 +184,8 @@ String(
     help_text=Help("Enter the target hostname"),
     prefill=DefaultValue("localhost"),
     custom_validate=[
-        LengthInRange(min_value=1, max_value=255),
-        MatchRegex(r"^[a-zA-Z0-9.-]+$"),
+        validators.LengthInRange(min_value=1, max_value=255),
+        validators.MatchRegex(r"^[a-zA-Z0-9.-]+$"),
     ],
 )
 ```
@@ -165,7 +195,7 @@ String(
 Integer(
     title=Title("Port"),
     prefill=DefaultValue(8080),
-    custom_validate=[NumberInRange(min_value=1, max_value=65535)],
+    custom_validate=[validators.NumberInRange(min_value=1, max_value=65535)],
 )
 
 Float(
@@ -260,9 +290,11 @@ For credentials (integrates with password store):
 ```python
 Password(
     title=Title("API Token"),
-    migrate=migrate_to_password,  # Required for password store
+    migrate=migrate_to_password,  # only needed for rules created with the legacy ValueSpec format
 )
 ```
+
+The `Password` form spec supports the password store by itself. `migrate_to_password` only converts legacy stored values (`("password", x)` / `("store", id)`) into the new model. Keep it when you migrate an existing legacy ruleset; a brand-new ruleset doesn't need it.
 
 ### List
 For multiple items:
@@ -276,18 +308,96 @@ List(
 )
 ```
 
-### Tuple
-For fixed-length sequences:
+### No Tuple in v1
+`cmk.rulesets.v1` has no `Tuple` form spec (importing it raises `ImportError`). Use a `Dictionary` with required `DictElement`s instead, or `SimpleLevels`/`Levels` for warn/crit pairs:
 
 ```python
-Tuple(
+Dictionary(
     title=Title("Port range"),
-    elements=[
-        Integer(title=Title("From port")),
-        Integer(title=Title("To port")),
-    ],
+    elements={
+        "from_port": DictElement(parameter_form=Integer(title=Title("From port")), required=True),
+        "to_port": DictElement(parameter_form=Integer(title=Title("To port")), required=True),
+    },
 )
 ```
+
+### Other Form Specs
+All importable from `cmk.rulesets.v1.form_specs`; all accept `title`, `help_text`, `migrate`, `custom_validate`.
+
+| Form spec | Value in params | Key args |
+|-----------|--------------|----------|
+| `FixedValue` | the fixed value | `value=`, `label=` |
+| `ServiceState` | `0..3` | `prefill=DefaultValue(ServiceState.WARN)` (constants `OK/WARN/CRIT/UNKNOWN`) |
+| `HostState` | `0..2` | `prefill=DefaultValue(HostState.DOWN)` (`UP/DOWN/UNREACH`) |
+| `Percentage` | float | `prefill=`, `label=` |
+| `DataSize` | int (bytes) | `displayed_magnitudes=[IECMagnitude.MEBI, ...]` or `[SIMagnitude.KILO, ...]` (required) |
+| `TimeSpan` | float (seconds) | `displayed_magnitudes=[TimeMagnitude.MILLISECOND/SECOND/MINUTE/HOUR/DAY]` (required) |
+| `MultilineText` | str | `monospaced=`, `macro_support=` |
+| `RegularExpression` | str | `predefined_help_text=MatchingScope.PREFIX/INFIX/FULL` (required) |
+| `FileUpload` | `(file_name, mime_type, content_bytes)` | `extensions=(".pem",)`, `mime_types=` |
+| `Proxy` | proxy model | `allowed_schemas=`; `migrate=migrate_to_proxy` for legacy values |
+| `TimePeriod` | time period name | `migrate=migrate_to_time_period` for legacy values |
+| `MonitoredHost` | host name | — |
+| `MonitoredService` | service name | — |
+| `Metric` | metric name | — |
+| `MultipleChoice` | list of names | `elements=[MultipleChoiceElement(name=, title=)]`, `show_toggle_all=` |
+
+**Grouping dictionary elements:** `DictElement(..., group=DictGroup(title=Title("Connection")))` renders elements sharing the same `DictGroup` together.
+
+```python
+conn = DictGroup(title=Title("Connection"))
+Dictionary(
+    elements={
+        "size": DictElement(parameter_form=DataSize(displayed_magnitudes=[IECMagnitude.MEBI, IECMagnitude.GIBI])),
+        "state": DictElement(parameter_form=ServiceState(prefill=DefaultValue(ServiceState.WARN))),
+        "pattern": DictElement(parameter_form=RegularExpression(predefined_help_text=MatchingScope.INFIX)),
+        "proxy": DictElement(parameter_form=Proxy(migrate=migrate_to_proxy), group=conn),
+        "port": DictElement(parameter_form=Integer(custom_validate=(validators.NetworkPort(),)), group=conn),
+    },
+)
+```
+
+### Levels with Predictive Levels
+`Levels` = `SimpleLevels` + a predictive option (`LevelsType.NONE/FIXED/PREDICTIVE`). The value your check function receives is `("no_levels", None)`, `("fixed", (w, c))` or `("predictive", (reference_metric, predicted_value, (w, c)))` — pass it unchanged to `check_levels()`.
+
+```python
+Levels(
+    title=Title("Packets per second"),
+    form_spec_template=Integer(unit_symbol="1/s"),
+    level_direction=LevelDirection.UPPER,
+    prefill_fixed_levels=DefaultValue((100000, 200000)),
+    predictive=PredictiveLevels(
+        reference_metric="packets",                  # metric the prediction is based on
+        prefill_abs_diff=DefaultValue((5000, 10000)),
+    ),
+    migrate=migrate_to_upper_integer_levels,
+)
+```
+
+### Migration Helpers (legacy `(warn, crit)` tuples → new model)
+Use as `migrate=` when converting an existing legacy ruleset whose stored rules are plain tuples. The levels helpers take an optional `scale` factor (e.g. `scale=100` for fraction → percent).
+
+| Helper | Target form spec |
+|--------|------------------|
+| `migrate_to_float_simple_levels` / `migrate_to_integer_simple_levels` | `SimpleLevels` |
+| `migrate_to_upper_float_levels` / `migrate_to_upper_integer_levels` | `Levels` (upper) |
+| `migrate_to_lower_float_levels` / `migrate_to_lower_integer_levels` | `Levels` (lower) |
+| `migrate_to_password`, `migrate_to_proxy`, `migrate_to_time_period` | `Password`, `Proxy`, `TimePeriod` |
+
+Example: `migrate_to_float_simple_levels((80, 90))` → `("fixed", (80.0, 90.0))`.
+
+### Validators (`from cmk.rulesets.v1.form_specs import validators`)
+Pass as `custom_validate=(...)`. All accept an optional `error_msg=Message(...)` (`from cmk.rulesets.v1 import Message`).
+
+| Validator | Checks |
+|-----------|--------|
+| `NumberInRange(min_value=, max_value=)` | numeric range |
+| `LengthInRange(min_value=, max_value=)` | length of str/list |
+| `MatchRegex(regex)` | string matches regex |
+| `NetworkPort()` | integer in 0–65535 |
+| `Url(protocols=[validators.UrlProtocol.HTTP, validators.UrlProtocol.HTTPS])` | URL with allowed scheme |
+| `EmailAddress()` | email address |
+| `RegexGroupsInRange(min_groups=, max_groups=)` | number of regex match groups |
 
 ## Complete Ruleset Example
 
@@ -370,7 +480,7 @@ rule_spec_cpu_usage = CheckParameters(
 def check_cpu(item, params, section):
     # Get levels (returns tuple or None)
     levels_upper = params.get("levels_upper")
-    # levels_upper is ("fixed", (80.0, 90.0)) or None
+    # levels_upper is ("fixed", (80.0, 90.0)), ("no_levels", None) or None
     
     # Simple values
     avg_minutes = params.get("average_minutes", 5)
@@ -501,6 +611,19 @@ def _percent_levels(title: str, warn: float = 80.0, crit: float = 90.0) -> Simpl
 - Single place to update defaults
 - Reduces copy-paste errors
 - Self-documenting parameter patterns
+
+---
+
+## Changes in 2.5
+
+| Werk | Compat | Change |
+|------|--------|--------|
+| #17876 | yes | `custom_validate` on `SimpleLevels`/`Levels` is now actually executed (before, only validators on `form_spec_template` ran). |
+| #18966 | **no** | `custom_validate` is now enforced for `BooleanChoice`, `CascadingSingleChoice`, `FixedValue`, `HostState`, `Metric`, `MonitoredHost`, `MonitoredService`, `Password`, `Proxy`, `ServiceState`, `TimePeriod`. Existing rules that violate a validator become invalid and must be fixed manually. |
+| #17884 | **no** | `rule_spec_<name> = NotificationParameters(...)` is now discovered; `name` must match the notification script name. The legacy `notification_parameter_registry` is no longer supported. |
+| #18965 | yes | A v1 ruleset with the same name as a shipped *legacy* ruleset, placed in `~/local/lib/python3/cmk/plugins/<family>/rulesets/`, takes precedence over it. |
+| #19167 | yes | New form rendering for all v1 rulesets (e.g. multiple validation errors shown at once). |
+| #17804 | yes | `Topic.VIRTUALIZATION` no longer breaks the quicksearch index. |
 
 ---
 

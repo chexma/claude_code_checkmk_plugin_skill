@@ -10,8 +10,10 @@
 #   ~/local/lib/python3/cmk_addons/plugins/<family>/rulesets/agent_config.py
 #
 # Companion files:
-#   1. Bakery plugin in ~/local/lib/check_mk/base/cee/plugins/bakery/
-#   2. Agent plugins in ~/local/share/check_mk/agents/plugins/
+#   1. Bakery plugin: v1 in ~/local/lib/python3/cmk/base/cee/plugins/bakery/
+#      or v2_unstable (2.5+) in ~/local/lib/python3/cmk_addons/plugins/<family>/bakery/
+#   2. Agent plugins: v1 in ~/local/share/check_mk/agents/plugins/,
+#      v2_unstable in ~/local/lib/python3/cmk_addons/plugins/<family>/agents/
 #
 # After installation:
 #   - Restart Apache: omd restart apache

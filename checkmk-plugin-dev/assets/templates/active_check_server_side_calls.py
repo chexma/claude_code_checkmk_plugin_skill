@@ -47,6 +47,7 @@ def generate_myservice_commands(
         host_config.name                    - Host name
         host_config.alias                   - Host alias
         host_config.primary_ip_config.address  - Primary IP address
+                                              (raises ValueError if the host has no IP)
         host_config.macros                  - Host macros dict
     """
     
@@ -102,14 +103,14 @@ def generate_myservice_commands(
             args.extend(["--expect", params["expect_string"]])
     
     # Password handling (if your check needs authentication)
-    # The Secret type ensures passwords are handled securely
+    # A Password form spec value always arrives as a Secret - never build one yourself.
     if "password" in params:
-        password = params["password"]
-        if isinstance(password, Secret):
-            args.extend(["--password", password])
-        else:
-            # Handle legacy format or plain string
-            args.extend(["--password", Secret(password)])
+        # CheckMK 2.5 (recommended): pass only the password-store reference.
+        # The executable receives "<id>:<store_file>" and resolves it with
+        # cmk.password_store.v1_unstable.resolve_secret_option (see active_check_executable.py).
+        args.extend(["--password-id", params["password"]])
+        # CheckMK 2.4 (also works on 2.5): pass the plaintext - visible in the process table!
+        # args.extend(["--password", params["password"].unsafe()])
     
     # Service description
     # Can be static or dynamic based on configuration
@@ -218,18 +219,25 @@ def parse_myservice_params(params: Mapping[str, Any]) -> Mapping[str, Any]:
 For checks that need passwords or API keys:
 
 1. In ruleset, use Password() form spec
-2. In server_side_calls, use Secret type:
+2. In server_side_calls, params["password"] is already a Secret. Put it into
+   command_arguments (never into stdin or os.environ - both only accept str):
 
-    from cmk.server_side_calls.v1 import Secret
-    
-    if "password" in params:
-        args.extend(["--password", params["password"]])  # Already a Secret
-    
-3. In executable, password is passed via command line or environment
-   CheckMK handles secure storage and retrieval
+    # CheckMK 2.5 (recommended): the argv element becomes "<id>:<store_file>"
+    args.extend(["--password-id", params["password"]])
 
-For extra security, consider using --pwstore format:
-    args.extend(["--pwstore", f"{password_id}@{index}@{ident}"])
+    # CheckMK 2.4 (also works on 2.5): the argv element becomes the plaintext
+    args.extend(["--password", params["password"].unsafe()])
+    # optional template: params["password"].unsafe("user:%s")
+
+3. In the executable (2.5), resolve it with the unstable password store API:
+
+    from cmk.password_store.v1_unstable import parser_add_secret_option, resolve_secret_option
+    parser_add_secret_option(parser, long="--password", help="...", required=False)
+    password = resolve_secret_option(args, "password").reveal()
+
+   parser_add_secret_option creates both "--password" (plaintext, debugging) and
+   "--password-id" (store reference). Hyphenated option names (e.g. "api-token")
+   need 2.5.0p13+ (Werk #22275). See references/password_store_api.md.
 """
 
 

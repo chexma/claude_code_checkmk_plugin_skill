@@ -161,9 +161,9 @@ for license in licenses:
     )
 ```
 
-## Status Columns (Change Detection)
+## Status Columns (Live Data)
 
-`status_columns` are used for change detection:
+`status_columns` (and `status_attributes`) hold volatile live data. They go into the separate *status data* tree, which is **not** stored in the inventory history:
 
 ```python
 yield TableRow(
@@ -176,14 +176,19 @@ yield TableRow(
         "package_type": "rpm",
     },
     status_columns={
-        "version": package["version"],  # Changes are tracked
+        "state": package["state"],  # Live value, not historized
     },
 )
 ```
 
-- `key_columns`: Uniquely identify the item
-- `inventory_columns`: Static data
-- `status_columns`: Monitored for changes
+- `key_columns`: Uniquely identify the row
+- `inventory_columns`: Static data - archived, changes appear in the inventory history
+- `status_columns`: Live data - shown in the tree, not historized, no change detection
+- A key may appear in only one of the three mappings (`ValueError: conflicting key`)
+
+### Changes in 2.5 (Werk #19313)
+
+A `TableRow` with **only** `status_columns` (empty `inventory_columns`) now goes only into the status data tree - its `key_columns` are no longer written to the static inventory tree. If you need the row in the static tree/history, populate at least one `inventory_columns` entry.
 
 ## Agent Output for Inventory
 
@@ -348,17 +353,17 @@ inventory_plugin_mydevice = InventoryPlugin(
 
 ```bash
 # Run inventory for host
-cmk -v --inventory-as-check myhost
-
-# Inventory only (no check)
 cmk -v -i myhost
+
+# Restrict to your plugin
+cmk -v -i --detect-plugins=myapp myhost
 
 # Inventory debug
 cmk --debug -v -i myhost
 
-# Show inventory data
-cmk --paths | grep inventory
-cat ~/var/check_mk/inventory/myhost
+# Show inventory data (2.5: <host>.json + .json.gz; older sites: no extension)
+cat ~/var/check_mk/inventory/myhost.json
+cat ~/tmp/check_mk/status_data/myhost.json   # status data tree
 
 # Inventory tree in web UI
 # Setup > Hosts > <host> > Inventory
@@ -369,12 +374,11 @@ cat ~/var/check_mk/inventory/myhost
 CheckMK stores inventory changes:
 
 ```bash
-# History files
+# History files (<timestamp>.json)
 ls ~/var/check_mk/inventory_archive/myhost/
-
-# Changes between two points in time
-cmk --inventory-diff myhost
 ```
+
+Changes between points in time: host > *Inventory history* in the GUI.
 
 ## Inventory as Service
 

@@ -153,8 +153,8 @@ BACKUP_DURATION=$((BACKUP_END - BACKUP_START))
 # Get backup size
 BACKUP_SIZE=$(du -sm /var/backups/latest.tar.gz 2>/dev/null | cut -f1)
 
-# Write spool file atomically
-TEMP_FILE=$(mktemp)
+# Write spool file atomically (temp file in the SAME directory, dot-prefixed so the agent ignores it)
+TEMP_FILE=$(mktemp -p "$SPOOL_DIR" .tmp.XXXXXX)
 
 if [[ $BACKUP_RESULT -eq 0 ]]; then
     cat > "$TEMP_FILE" << EOF
@@ -180,7 +180,7 @@ chmod 644 "$SPOOL_FILE"
 
 $SpoolDir = "C:\ProgramData\checkmk\agent\spool"
 $SpoolFile = Join-Path $SpoolDir "3600_backup_status"
-$TempFile = [System.IO.Path]::GetTempFileName()
+$TempFile = [System.IO.Path]::GetTempFileName()   # must be on the same volume as the spool dir for an atomic move
 
 # Ensure UTF-8 without BOM
 $Utf8NoBom = New-Object System.Text.UTF8Encoding $false
@@ -241,7 +241,8 @@ SPOOL_FILE = SPOOL_DIR / "3600_backup_status"
 def write_spool_file(content: str) -> None:
     """Write content to spool file atomically."""
     # Create temp file
-    fd, temp_path = tempfile.mkstemp(suffix=".tmp")
+    # Same directory -> atomic rename; dot-prefix -> skipped by the Linux agent
+    fd, temp_path = tempfile.mkstemp(dir=SPOOL_DIR, prefix=".tmp_")
     try:
         # Write with UTF-8, Unix line endings
         with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as f:
@@ -353,7 +354,7 @@ def write_status(status: int, message: str, metrics: dict) -> None:
     content = f'<<<local>>>\n{status} "Service Monitor" {metrics_str} {message}\n'
     
     # Write atomically
-    temp_file = SPOOL_FILE.with_suffix('.tmp')
+    temp_file = SPOOL_DIR / f".{SPOOL_FILE.name}.tmp"  # hidden: agent skips it
     temp_file.write_text(content, encoding='utf-8')
     temp_file.rename(SPOOL_FILE)
 
@@ -401,11 +402,11 @@ $Utf8NoBom = New-Object System.Text.UTF8Encoding $false
 
 ### Atomic Writes
 
-Always write atomically to avoid partial reads:
+Always write atomically to avoid partial reads. A rename is only atomic on the same filesystem - create the temp file inside the spool directory (a leading `.` keeps the agent from reading it), not in `/tmp`:
 
 ```bash
-# Bash: Write to temp, then move
-TEMP=$(mktemp)
+# Bash: Write to temp (same filesystem, hidden name), then move
+TEMP=$(mktemp -p /var/lib/check_mk_agent/spool .tmp.XXXXXX)
 echo "<<<local>>>" > "$TEMP"
 echo "0 \"My Check\" - OK" >> "$TEMP"
 mv "$TEMP" /var/lib/check_mk_agent/spool/mycheck
@@ -416,7 +417,7 @@ mv "$TEMP" /var/lib/check_mk_agent/spool/mycheck
 import tempfile
 import shutil
 
-fd, temp = tempfile.mkstemp()
+fd, temp = tempfile.mkstemp(dir=os.path.dirname(spool_file), prefix=".tmp_")
 with os.fdopen(fd, 'w') as f:
     f.write(content)
 shutil.move(temp, spool_file)

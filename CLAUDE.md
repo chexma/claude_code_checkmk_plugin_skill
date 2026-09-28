@@ -14,21 +14,22 @@ Three areas differ and are explicitly version-tagged:
 
 1. **Bakery API** (`references/bakery_api.md`) has two versions living side by side:
    - `cmk.base.plugins.bakery.bakery_api.v1` — stable, use for CheckMK 2.3–2.4 and for 2.5 unless you need the new features.
-   - `cmk.bakery.v2_unstable` — CheckMK 2.5+, new plugin family layout, `BakeryPlugin` class instead of `register.bakery_plugin()`, `Secret` objects instead of raw password-store access. Marked unstable until it stabilizes in 2.6.
+   - `cmk.bakery.v2_unstable` — CheckMK 2.5+, new plugin family layout, `BakeryPlugin` class instead of `register.bakery_plugin()`, `Secret` objects instead of raw password-store access. Marked unstable until it stabilizes in 3.0.0.
 2. **Three brand-new 2.5-only unstable APIs** with no 2.4 equivalent — each has its own reference file, clearly marked "2.5+, unstable":
    - `references/password_store_api.md` — `cmk.password_store.v1_unstable`
    - `references/server_side_programs_api.md` — `cmk.server_side_programs.v1_unstable`
    - `references/inventory_ui_api.md` — `cmk.inventory_ui.v1_unstable`
+   - `references/dcd_connector_api.md` — `cmk.nonfree.pro.dcd.connector_api` (commercial editions, unversioned)
 3. **REST API** (`references/rest_api.md`): `/api/v1/` is stable; `/api/unstable/` is a superset with 50 extra 2.5 endpoints that may change without notice. Not a plugin API — client-side automation only.
 
-Migration timeline per Werk #18600: unstable in 2.5 → stabilized (renamed) in 2.6 → legacy APIs removed in 2.7. When writing new plugin code, ask which CheckMK version the user targets before choosing between stable v1 and unstable v2/new APIs — see `SKILL.md`'s version note.
+Migration timeline per Werk #18600, corrected by Werk #19370 (2.5.0p11 — the next major is 3.0.0, there is no 2.6/2.7): unstable in 2.5 → stabilized (renamed) in 3.0.0 → legacy APIs (bakery v1, `cmk.special_agents.v0_unstable`, `cmk.utils.password_store`) deprecated in 3.0.0 and removed in 3.1.0. When writing new plugin code, ask which CheckMK version the user targets before choosing between stable v1 and unstable v2/new APIs — see `SKILL.md`'s version note.
 
 ## Structure
 
 ```
 checkmk-plugin-dev/
 ├── SKILL.md              # Main skill entry point
-├── references/           # Detailed API documentation (23 files)
+├── references/           # Detailed API documentation (24 files)
 └── assets/templates/     # Ready-to-use plugin templates (22 files)
 ```
 
@@ -78,6 +79,7 @@ levels_upper=(warn, crit)
 cmk -vI --detect-plugins=myplugin hostname    # Discovery
 cmk -v --detect-plugins=myplugin hostname     # Execute
 cmk --debug --detect-plugins=myplugin hostname # Debug
+cmk-validate-plugins                           # Check all plugins load
 cmk -D hostname                                # Effective params
 omd restart apache                             # After ruleset changes
 ```

@@ -259,14 +259,18 @@ def generate_mycheck_commands(
     if "timeout" in params:
         args.extend(["-t", str(params["timeout"])])
     
-    # Thresholds
-    if "response_time" in params:
-        warn, crit = params["response_time"]
-        args.extend(["-w", str(warn), "-c", str(crit)])
+    # Thresholds (SimpleLevels: ("fixed", (warn, crit)) or ("no_levels", None))
+    match params.get("response_time"):
+        case ("fixed", (warn, crit)):
+            args.extend(["-w", str(warn), "-c", str(crit)])
     
-    # Password handling (if needed)
+    # Password handling (if needed) - params["password"] is a Secret
     if "password" in params:
-        args.extend(["--password", params["password"]])  # Secret type
+        # 2.5 (recommended): executable receives "<id>:<store_file>" and resolves it
+        # with cmk.password_store.v1_unstable (see "Secrets in the Executable" below)
+        args.extend(["--password-id", params["password"]])
+        # 2.4 (also works on 2.5): plaintext in argv
+        # args.extend(["--password", params["password"].unsafe()])
     
     # Service description
     service_description = params.get("service_description", "My Service Check")
@@ -291,7 +295,8 @@ active_check_mycheck = ActiveCheckConfig(
 - Variable must be named `active_check_<name>`
 - `name` must match the executable: `check_<name>`
 - Executable location: `~/local/lib/nagios/plugins/check_<name>` or `~/local/lib/python3/cmk_addons/plugins/<family>/libexec/check_<name>`
-- Use `Secret` type for passwords (handled securely)
+- `params["password"]` is already a `Secret` — never construct one yourself. Passed as-is it becomes `<id>:<store_file>`; `.unsafe()` makes it the plaintext. Only valid inside `command_arguments`
+- `host_config.primary_ip_config` raises `ValueError` if the host has no IP address
 
 ## 3. Ruleset Definition
 
@@ -309,7 +314,8 @@ from cmk.rulesets.v1.form_specs import (
     Integer,
     Float,
     Password,
-    Tuple,
+    SimpleLevels,
+    LevelDirection,
     DefaultValue,
     validators,
 )
@@ -356,13 +362,13 @@ rule_spec_mycheck = ActiveCheck(
             ),
             "response_time": DictElement(
                 required=False,
-                parameter_form=Tuple(
+                # Note: there is no Tuple form spec in cmk.rulesets.v1
+                parameter_form=SimpleLevels(
                     title=Title("Response time thresholds"),
                     help_text=Help("Warning and critical thresholds in seconds"),
-                    elements=[
-                        Float(title=Title("Warning"), prefill=DefaultValue(1.0)),
-                        Float(title=Title("Critical"), prefill=DefaultValue(5.0)),
-                    ],
+                    level_direction=LevelDirection.UPPER,
+                    form_spec_template=Float(unit_symbol="s"),
+                    prefill_fixed_levels=DefaultValue((1.0, 5.0)),
                 ),
             ),
         },
@@ -656,6 +662,23 @@ cmk -N myhost | grep check_mycheck
 | `~/local/lib/python3/cmk_addons/plugins/<family>/libexec/` | Custom executables (alternative) |
 | `~/local/lib/python3/cmk_addons/plugins/<family>/server_side_calls/` | ActiveCheckConfig |
 | `~/local/lib/python3/cmk_addons/plugins/<family>/rulesets/` | ActiveCheck rulesets |
+
+## Secrets in the Executable (CheckMK 2.5+)
+
+Pair `["--password-id", params["password"]]` in the server-side calls with the unstable password store API (expected stable in 3.0.0; replaces the legacy `cmk.utils.password_store`, which is deprecated in 3.0.0 and removed in 3.1.0 — Werk #18600, corrected by Werk #19370):
+
+```python
+from cmk.password_store.v1_unstable import parser_add_secret_option, resolve_secret_option
+
+parser_add_secret_option(parser, long="--password", help="Password", required=False)
+args = parser.parse_args()
+if args.password is not None or args.password_id is not None:
+    password = resolve_secret_option(args, "password").reveal()
+```
+
+Hyphenated option names (`"api-token"`) need 2.5.0p13+ (Werk #22275). For 2.4 compatibility use a `try/except ImportError` fallback to a plain `--password` (see `assets/templates/active_check_executable.py`).
+
+Crash reports: `cmk.server_side_programs.v1_unstable` exports only `report_agent_crashes`; the module also contains `report_check_crashes(name, version)` for active checks, but it is not in `__all__` or the official docs — treat it as unofficial. See `server_side_programs_api.md`.
 
 ## Related Topics (CheckMK 2.5+)
 

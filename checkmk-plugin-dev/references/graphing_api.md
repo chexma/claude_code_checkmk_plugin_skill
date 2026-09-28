@@ -17,11 +17,24 @@ from cmk.graphing.v1.metrics import (
     StandardScientificNotation,
     EngineeringScientificNotation,
     TimeNotation,
+    AutoPrecision,
+    StrictPrecision,
+    # Operations usable as graph lines / bounds
+    Constant,
+    WarningOf,
+    CriticalOf,
+    MinimumOf,
+    MaximumOf,
+    Sum,
+    Product,
+    Difference,
+    Fraction,
 )
 
 from cmk.graphing.v1.graphs import (
     Graph,
     MinimalRange,
+    Bidirectional as GraphBidirectional,  # name clash with perfometers.Bidirectional
 )
 
 from cmk.graphing.v1.perfometers import (
@@ -34,12 +47,18 @@ from cmk.graphing.v1.perfometers import (
 )
 
 from cmk.graphing.v1.translations import (
-    Translation,
+    Translation,          # exists, but not listed in translations.__all__
+    PassiveCheck,
+    ActiveCheck,
+    HostCheckCommand,
+    NagiosPlugin,
     RenameTo,
     ScaleBy,
     RenameToAndScaleBy,
 )
 ```
+
+Variable prefixes (from `entry_point_prefixes()`): `metric_`, `graph_` (Graph, graphs.Bidirectional), `perfometer_` (Perfometer, Bidirectional, Stacked), `translation_`.
 
 ## Metric Definition
 
@@ -81,6 +100,15 @@ metric_temperature = Metric(
 | `SINotation("bit/s")` | Network bandwidth | "100 Mbit/s" |
 | `SINotation("Hz")` | Frequency | "3.5 GHz" |
 | `TimeNotation()` | Duration | "2h 30min" |
+| `StandardScientificNotation("A")` | Scientific | "1.5e-3 A" |
+| `EngineeringScientificNotation("F")` | Exponent multiple of 3 | "150e-6 F" |
+
+**Precision:** `Unit(notation, precision=AutoPrecision(2))` is the default: rounds the fractional part to n digits, or further to the first non-zero digit for tiny values (0.0001 stays visible). `StrictPrecision(n)` always rounds to n digits (tiny values become 0):
+
+```python
+Unit(DecimalNotation("%"), StrictPrecision(1))
+Unit(IECNotation("B"), AutoPrecision(3))
+```
 
 ## Color Options
 
@@ -147,9 +175,11 @@ graph_memory = Graph(
     simple_lines=[
         "memory_total",
     ],
-    minimal_range=MinimalRange(0, None),  # None = auto-scale upper bound
+    minimal_range=MinimalRange(0, "memory_total"),  # bound can be a number, metric name or operation
 )
 ```
+
+> `MinimalRange` bounds are `int | float | Quantity` — `None` is **not** allowed. To let the graph auto-scale, omit `minimal_range` (it is only a minimum, the graph grows beyond it).
 
 ### Graph Options
 - `simple_lines` - Regular line plots
@@ -157,6 +187,49 @@ graph_memory = Graph(
 - `optional` - Metrics shown if available (list of metric names)
 - `conflicting` - Mutually exclusive metrics (list of metric names)
 - `minimal_range` - Minimum Y-axis range
+
+Entries in `simple_lines` / `compound_lines` may be metric names **or** operations (see below).
+
+### Metric Operations (Quantities)
+Usable wherever a metric name is accepted (graph lines, `MinimalRange`, perfometer `segments`/`FocusRange`):
+
+| Operation | Meaning |
+|-----------|---------|
+| `WarningOf("m")` / `CriticalOf("m")` | WARN/CRIT threshold of metric `m` (horizontal line) |
+| `MinimumOf("m", Color.X)` / `MaximumOf("m", Color.X)` | Min/max value of metric `m` |
+| `Constant(Title, Unit, Color, value)` | Fixed value |
+| `Sum(Title, Color, [q1, q2, ...])` | q1 + q2 + ... |
+| `Product(Title, Unit, Color, [q1, q2, ...])` | q1 × q2 × ... |
+| `Difference(Title, Color, minuend=q1, subtrahend=q2)` | q1 − q2 |
+| `Fraction(Title, Unit, Color, dividend=q1, divisor=q2)` | q1 ÷ q2 |
+
+```python
+graph_mem = Graph(
+    name="mem_usage",
+    title=Title("Memory usage"),
+    compound_lines=["mem_used"],
+    simple_lines=[
+        "mem_total",
+        WarningOf("mem_used"),
+        CriticalOf("mem_used"),
+        MaximumOf("mem_used", Color.DARK_BLUE),
+        Difference(Title("Memory free"), Color.GREEN, minuend="mem_total", subtrahend="mem_used"),
+    ],
+    minimal_range=MinimalRange(0, "mem_total"),
+)
+```
+
+### Bidirectional Graph
+Two graphs mirrored around the x-axis (`lower` is drawn downwards), e.g. in/out traffic:
+
+```python
+graph_bandwidth = GraphBidirectional(          # graphs.Bidirectional
+    name="bandwidth",
+    title=Title("Bandwidth"),
+    lower=Graph(name="bandwidth_in", title=Title("In"), compound_lines=["if_in_bps"]),
+    upper=Graph(name="bandwidth_out", title=Title("Out"), compound_lines=["if_out_bps"]),
+)
+```
 
 ## Perfometer Definition
 
@@ -218,12 +291,16 @@ perfometer_network = Bidirectional(
 For renaming or scaling existing metrics:
 
 ```python
-translation_legacy = Translation(
+translation_legacy = Translation(               # variable prefix: translation_
     name="legacy_cpu",
-    check_commands=["legacy_check_cpu"],
+    check_commands=[                             # typed objects, NOT plain strings
+        PassiveCheck("legacy_check_cpu"),        # check plugin name
+        # ActiveCheck("http"), NagiosPlugin("check_foo"), HostCheckCommand("host-ping")
+    ],
     translations={
         "old_cpu_metric": RenameTo("cpu_usage"),
         "old_bytes": RenameToAndScaleBy("data_bytes", 1024),  # Multiply by 1024
+        "old_ms": ScaleBy(0.001),                              # keep name, scale
     },
 )
 ```
@@ -330,6 +407,13 @@ Graphing definitions provide:
 - Consistent colors
 - Combined graphs
 - Perfometer display
+
+## Changes in 2.5
+
+| Werk | Change |
+|------|--------|
+| #17660 | Graph lines are classified as *scalars* (`WarningOf`, `CriticalOf`, `MinimumOf`, `MaximumOf`, `Constant`, and `Sum`/`Product`/... built only from scalars) or metrics. Scalars are shown in a separate legend area below the graph. |
+| #17677 | `MinimumOf` / `MaximumOf` lines are labelled "Minimum of …" / "Maximum of …" in legend and hover (before: only the metric title). |
 
 ---
 

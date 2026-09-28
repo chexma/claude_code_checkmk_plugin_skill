@@ -24,6 +24,7 @@ Unless noted otherwise, these are identical in 2.4 and 2.5:
 | **Password Store API** | Read stored secrets in server-side programs | `cmk.password_store.v1_unstable` |
 | **Server-Side Programs API** | Crash reports, call-to-call persistence, TLS helpers | `cmk.server_side_programs.v1_unstable` |
 | **Inventory UI API** | Custom HW/SW inventory tree visualizations | `cmk.inventory_ui.v1_unstable` |
+| **DCD Connector API** | Custom Dynamic Configuration Daemon connectors (commercial editions, unversioned) | `cmk.nonfree.pro.dcd.connector_api`, see `dcd_connector_api.md` |
 | **REST API unstable** | v1 + 50 new endpoints (dashboards, availability, relays, OpenTelemetry, metric backend, inventory trees, …) | `/check_mk/api/unstable/`, see `rest_api.md` |
 
 ## In-Checkmk Resources
@@ -51,7 +52,7 @@ The old `api/1.0/` spelling still works but is legacy. Details on versions, auth
 
 ## Plugin Development File Locations
 
-### Directory Structure (2.4 & 2.5, unchanged)
+### Directory Structure
 ```
 ~/local/lib/python3/cmk_addons/plugins/<family>/
 ├── agent_based/        # Check plugins (Check API V2)
@@ -60,8 +61,11 @@ The old `api/1.0/` spelling still works but is legacy. Details on versions, auth
 ├── server_side_calls/  # Special agent configs
 ├── libexec/            # Special agent executables
 ├── checkman/           # Man pages
-└── inventory_ui/       # Inventory UI plugins
+├── bakery/             # Bakery plugins (2.5+, cmk.bakery.v2_unstable)
+└── inventory_ui/       # Inventory UI plugins (2.5+)
 ```
+
+`bakery/` and `inventory_ui/` are new in 2.5; everything else is identical in 2.4. The symlinks `~/lib/check_mk` and `~/local/lib/check_mk` were removed in 2.5 (Werk #17969).
 
 ### Built-in Plugins (for reference)
 ```
@@ -103,7 +107,7 @@ from cmk.rulesets.v1 import Title, Label, Help
 
 from cmk.rulesets.v1.form_specs import (
     # Containers
-    Dictionary, DictElement, List, Tuple,
+    Dictionary, DictElement, List,  # no Tuple in v1
     # Basic types
     String, Integer, Float, BooleanChoice,
     # Selection
@@ -114,8 +118,8 @@ from cmk.rulesets.v1.form_specs import (
     Password, migrate_to_password,
     SimpleLevels, Levels, LevelDirection,
     DefaultValue, InputHint,
-    # Validators
-    NumberInRange, LengthInRange, MatchRegex,
+    # Validators submodule: validators.NumberInRange, validators.LengthInRange, validators.MatchRegex, ...
+    validators,
 )
 
 from cmk.rulesets.v1.rule_specs import (
@@ -175,6 +179,8 @@ Plugins are auto-discovered by name prefix:
 | `graph_` | Graph definition | `graph_mygraph` |
 | `perfometer_` | Perfometer | `perfometer_myperf` |
 | `translation_` | Metric translation | `translation_legacy` |
+| `bakery_plugin_` | Bakery plugin (2.5+, v2_unstable) | `bakery_plugin_myplugin` |
+| `node_` | Inventory UI node (2.5+) | `node_myapp` |
 
 ## Development Workflow
 

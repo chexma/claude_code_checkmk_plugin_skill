@@ -21,7 +21,7 @@ MKP (Monitoring Kit Package) is the standard format for CheckMK extensions.
 | Command | Effect | DANGER |
 |---------|--------|--------|
 | `mkp disable <name>` | Unregisters AND **DELETES all package files** | Destroys bind-mounted source! |
-| `mkp remove <name> <version>` | **DELETES package and files permanently** | No recovery without backup! |
+| `mkp remove <name> <version>` | **DELETES the stored package permanently** (only works on a disabled package: "This package is enabled! Please disable it first.") | No recovery without backup! |
 
 ### Safe Workflow for Development
 
@@ -55,8 +55,8 @@ mkp list
 # Find unpackaged local files
 mkp find
 
-# Create manifest template for new package
-mkp template myplugin
+# Create manifest template for new package (written to stdout since 2.5, Werk #17963)
+mkp template myplugin > ~/tmp/myplugin.manifest
 
 # Build .mkp from manifest
 mkp package ~/var/check_mk/packages/myplugin
@@ -74,26 +74,27 @@ mkp enable myplugin 1.0.0
 |------|---------|
 | `~/var/check_mk/packages/<name>` | Active manifest for installed package |
 | `~/var/check_mk/packages_local/<name>-<ver>.mkp` | Built .mkp files |
-| `~/tmp/check_mk/<name>.manifest.temp` | Template output (new packages only) |
 | `~/local/lib/python3/cmk_addons/plugins/<name>/` | Plugin source files |
 
 ## MKP CLI Commands
 
 ```bash
-# List all packages (shows active version)
+# List all packages and versions with their state (--json available)
 mkp list
 
-# List all versions including inactive
-mkp list --all
+# Show manifest of an installed package / of an .mkp file / of all packages
+mkp show <name> [version]
+mkp inspect <file.mkp>
+mkp show-all
 
-# Show files in a specific package version
-mkp files <name> <version>
+# Show files in a package (version optional if unambiguous)
+mkp files <name> [version]
 
-# Find unpackaged local files
+# Find unpackaged local files (-a: include packaged files)
 mkp find
 
-# Create manifest template (for NEW packages)
-mkp template <name>
+# Create manifest template (for NEW packages) - prints to stdout
+mkp template <name> > <manifest_path>
 
 # Build .mkp from manifest path
 mkp package <manifest_path>
@@ -102,13 +103,19 @@ mkp package <manifest_path>
 mkp add <file.mkp>
 
 # Enable specific version (makes it active)
-mkp enable <name> <version>
+mkp enable <name> [version]
+
+# Enable even if version.min_required/usable_until don't match this site
+mkp enable --force-install <name> [version]
 
 # Disable package
-mkp disable <name>
+mkp disable <name> [version]
 
-# Remove package AND delete files
-mkp remove <name> <version>
+# Disable all packages whose version.usable_until is exceeded
+mkp disable-outdated
+
+# Delete a stored package (must be disabled first)
+mkp remove <name> [version]
 
 # Remove package but KEEP files as unpackaged
 mkp release <name>
@@ -163,11 +170,16 @@ mkp release <name>
 
 | Key | Local Path |
 |-----|------------|
-| `cmk_addons_plugins` | `local/lib/python3/cmk_addons/plugins/<name>/` |
-| `lib` | `local/lib/` |
+| `cmk_addons_plugins` | `local/lib/python3/cmk_addons/plugins/` |
+| `cmk_plugins` | `local/lib/python3/cmk/plugins/` (overrides of shipped plugins) |
+| `lib` | `local/lib/` (e.g. bakery v1: `python3/cmk/base/cee/plugins/bakery/x.py`) |
 | `agents` | `local/share/check_mk/agents/` |
 | `web` | `local/share/check_mk/web/` |
 | `checkman` | `local/share/check_mk/checkman/` |
+
+Further parts: `agent_based`, `checks`, `inventory`, `notifications`, `gui`, `pnp-templates`, `doc`, `locales`, `bin`, `mibs`, `alert_handlers`, `ec_rule_packs` (see `mkp path-config-template`).
+
+**Files only, no folders** (Werk #18219): every entry in `files` must be a file path; `mkp` refuses directories.
 
 ### Including Checkman Files in MKP
 
@@ -193,14 +205,14 @@ The checkman file must match the check plugin name exactly.
 ### New Package
 
 ```bash
-# 1. Create manifest template (finds all unpackaged files)
-mkp template mypackage
+# 1. Create manifest template (finds all unpackaged files, prints to stdout)
+mkp template mypackage > ~/tmp/mypackage.manifest
 
 # 2. Edit template - IMPORTANT: remove unwanted files, set metadata
-vi ~/tmp/check_mk/mypackage.manifest.temp
+vi ~/tmp/mypackage.manifest
 
 # 3. Build .mkp from template
-mkp package ~/tmp/check_mk/mypackage.manifest.temp
+mkp package ~/tmp/mypackage.manifest
 
 # 4. Add the built package to site
 mkp add ~/var/check_mk/packages_local/mypackage-1.0.0.mkp
@@ -245,8 +257,9 @@ Only one version is "active" - the one whose files are deployed. Use `mkp enable
 `mkp template` finds ALL unpackaged files including pip packages and other unrelated files. **Always edit the manifest** to include only your plugin files.
 
 ```bash
-# After running mkp template, edit the manifest:
-vi ~/tmp/check_mk/mypackage.manifest.temp
+# mkp template writes to stdout - redirect, then edit:
+mkp template mypackage > ~/tmp/mypackage.manifest
+vi ~/tmp/mypackage.manifest
 # Remove unwanted files from the 'files' section
 ```
 
@@ -255,7 +268,8 @@ vi ~/tmp/check_mk/mypackage.manifest.temp
 Use `mkp release` if you want to keep files as unpackaged:
 
 ```bash
-# DELETES files from local/
+# DELETES files from local/ and the stored package
+mkp disable myplugin 1.0.0
 mkp remove myplugin 1.0.0
 
 # Keeps files, just removes package registration
@@ -272,6 +286,7 @@ Can't `mkp add` if same version already exists. Either remove first or increment
 
 ```bash
 # Option 1: Remove existing version first
+mkp disable myplugin 1.0.0
 mkp remove myplugin 1.0.0
 mkp add myplugin-1.0.0.mkp
 
@@ -334,6 +349,8 @@ discovery:
 'version.packaged': '2.4.0p16'     # Version used for packaging
 'version.min_required': '2.4.0p1'  # Minimum required version
 'version.usable_until': None       # Use None, not null (Python literal!)
+# Only set usable_until for a known incompatibility: `mkp disable-outdated`
+# (run on upgrades) disables packages whose usable_until is exceeded.
 ```
 
 ## Development with Git
@@ -429,9 +446,14 @@ jobs:
 
 ```bash
 # Check version conflict - same version may already exist
-mkp list --all
+mkp list
 
-# Remove existing version first if needed
+# Since 2.5 the GUI only installs MKPs whose version requirements are met
+# (Werk #17627). CLI override:
+mkp enable --force-install myplugin 1.0.0
+
+# Remove existing version first if needed (disable, then remove)
+mkp disable myplugin 1.0.0
 mkp remove myplugin 1.0.0
 
 # Then add
@@ -457,7 +479,8 @@ python3 -c "import cmk.agent_based.v2; print('OK')"
 # Restart Apache (for web/ruleset changes)
 omd restart apache
 
-# Reload core (for check changes)
+# Restart core (for check changes; since 2.5 a core restart also detects
+# changed plugin files, Werk #17939)
 cmk -R
 ```
 
@@ -487,5 +510,6 @@ ls ~/local/lib/python3/cmk_addons/plugins/  # New (v2)
 mkp release oldplugin
 
 # 4. Or remove completely
+mkp disable oldplugin 1.0.0
 mkp remove oldplugin 1.0.0
 ```

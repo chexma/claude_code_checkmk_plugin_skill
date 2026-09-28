@@ -16,9 +16,17 @@ from cmk.agent_based.v2 import (
     check_levels,
     render,
     StringTable,
+    CheckResult,
+    DiscoveryResult,
     RuleSetType,
     HostLabel,
+    ServiceLabel,
     get_value_store,
+    get_rate,
+    get_average,
+    GetRateError,
+    IgnoreResults,
+    IgnoreResultsError,
 )
 ```
 
@@ -109,9 +117,12 @@ check_plugin_mycheck = CheckPlugin(
     discovery_ruleset_name=None,
     check_default_parameters={},              # Required if using ruleset
     check_ruleset_name="mycheck",             # Links to ruleset
+    discovery_ruleset_type=RuleSetType.MERGED,  # or RuleSetType.ALL (list of all matching rules)
     cluster_check_function=None,
 )
 ```
+
+`AgentSection`/`SNMPSection` accept the same trio for host labels: `host_label_default_parameters`, `host_label_ruleset_name`, `host_label_ruleset_type` (host label function then takes `params, section`).
 
 ### Discovery Function Patterns
 
@@ -127,6 +138,11 @@ def discover_mycheck(section):
 def discover_mycheck(section):
     for item_name in section:
         yield Service(item=item_name)
+```
+
+**With service labels:**
+```python
+yield Service(item=name, labels=[ServiceLabel("mycheck/role", "primary")])
 ```
 
 **With discovery parameters:**
@@ -165,19 +181,17 @@ def check_mycheck(item, params, section):
     if not data:
         return  # Let CheckMK handle missing item
     
-    warn, crit = params.get("levels", (80, 90))
-    value = data["value"]
-    
-    if value >= crit:
-        state = State.CRIT
-    elif value >= warn:
-        state = State.WARN
-    else:
-        state = State.OK
-    
-    yield Result(state=state, summary=f"Value: {value}")
-    yield Metric("mymetric", value, levels=(warn, crit))
+    # params["levels"] is ("fixed", (warn, crit)) when it comes from SimpleLevels -
+    # never unpack it as (warn, crit); hand it to check_levels() instead
+    yield from check_levels(
+        data["value"],
+        levels_upper=params.get("levels"),
+        metric_name="mymetric",
+        label="Value",
+    )
 ```
+
+**Stale instead of UNKNOWN:** `raise IgnoreResultsError("...")` makes the service stale (e.g. temporary login failure); `yield IgnoreResults("...")` does the same without aborting the generator.
 
 ## check_levels() Function
 
@@ -217,9 +231,19 @@ levels_upper=(warn, crit)               # ❌ Missing level type!
 levels_upper=params.get("cpu_levels")   # Returns ("fixed", (80.0, 90.0)) or None
 ```
 
+**Level types** (exported as `LevelsT`, `FixedLevelsT`, `NoLevelsT`, `PredictiveLevelsT`):
+
+| Type | Value |
+|------|-------|
+| `NoLevelsT` | `("no_levels", None)` |
+| `FixedLevelsT` | `("fixed", (warn, crit))` |
+| `PredictiveLevelsT` | `("predictive", (metric_name, predicted_value, (warn, crit) or None))` |
+
+Predictive levels come from the `Levels` form spec with `PredictiveLevels`; the core fills in the prediction, so pass the parameter to `check_levels()` unchanged.
+
 ### v1 vs v2 API Note
 
-- `cmk.agent_based.v2` is the current API for CheckMK 2.4
+- `cmk.agent_based.v2` is the current API for CheckMK 2.4 and 2.5 (unchanged in 2.5)
 - Some official plugins still use `check_levels_v1` (not yet migrated)
 - New plugins should always use v2 `check_levels()` - it's future-proof
 
@@ -286,16 +310,20 @@ yield Result(
 | `render.iobandwidth(1000000)` | Bytes/s | "1.00 MB/s" |
 | `render.nicspeed(125000000)` | Bytes/s | "1 GBit/s" |
 | `render.timespan(3661)` | Seconds | "1 hour 1 minute" |
-| `render.datetime(timestamp)` | Unix time | "Jan 01 2024, 12:00" |
-| `render.date(timestamp)` | Unix time | "Jan 01 2024" |
+| `render.datetime(timestamp)` | Unix time (local tz) | "2024-01-01 12:00:00" |
+| `render.date(timestamp)` | Unix time (local tz) | "2024-01-01" |
+| `render.time_offset(-5)` | Seconds (signed) | "-5 seconds" |
 | `render.frequency(1000000000)` | Hz | "1.00 GHz" |
+
+`render.networkbandwidth()` and `render.nicspeed()` take **octets (bytes)/s** and multiply by 8 themselves - never pass bits/s.
 
 ## Value Store (Persistent Data)
 
 For rate calculations or remembering values between checks:
 
 ```python
-from cmk.agent_based.v2 import get_value_store, GetRateError
+import time
+from cmk.agent_based.v2 import get_value_store, get_rate, get_average, GetRateError
 
 def check_mycheck(item, section):
     value_store = get_value_store()
@@ -315,6 +343,9 @@ def check_mycheck(item, section):
     except GetRateError:
         yield Result(state=State.OK, summary="Awaiting data")
         return
+
+    # Exponentially weighted average over the last 15 minutes
+    avg = get_average(value_store, "avg_key", time.time(), rate, backlog_minutes=15)
 ```
 
 ## Host Labels
@@ -370,7 +401,21 @@ check_plugin_combined = CheckPlugin(
 
 def check_combined(item, section_section_a, section_section_b):
     # Access each section by name prefixed with section_
+    # With multiple sections, EACH argument may be None - check before use
     pass
+```
+
+## Cluster Checks
+
+For `cluster_check_function`, the section argument is `Mapping[node_name, section | None]`. `clusterize.make_node_notice_results(node, results)` prefixes node results for the cluster summary:
+
+```python
+from cmk.agent_based.v2 import clusterize
+
+def cluster_check_mycheck(item, section):
+    for node, node_section in section.items():
+        if node_section is not None:
+            yield from clusterize.make_node_notice_results(node, check_mycheck(item, node_section))
 ```
 
 ## TypedDict for Check Parameters

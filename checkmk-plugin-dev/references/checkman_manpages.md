@@ -158,10 +158,11 @@ cmk -M  # Lists all available man pages
 
 ## Integration with MKP Packaging
 
-Man pages are automatically included when packaging with `mkp`:
+Man pages in `cmk_addons_plugins/<family>/checkman/` are picked up by `mkp template` like any other unpackaged file:
 
 ```bash
-mkp pack <family_name>
+mkp template <package_name> > ~/tmp/<package_name>.manifest   # lists e.g. '<family>/checkman/<check_name>'
+mkp package ~/tmp/<package_name>.manifest
 ```
 
-The `checkman/` directory contents are bundled in the MKP file.
+List each man page file individually in the manifest — folders are rejected (Werk #18219).

@@ -51,6 +51,15 @@ except ImportError:
     import ssl
     HAS_REQUESTS = False
 
+# CheckMK 2.5+: unstable password store API. Expected to become stable in 3.0.0;
+# the legacy cmk.special_agents.v0_unstable / cmk.utils.password_store helpers are
+# deprecated in 3.0.0 and removed in 3.1.0. On 2.4 we fall back to a plain --password.
+try:
+    from cmk.password_store.v1_unstable import parser_add_secret_option, resolve_secret_option
+except ImportError:  # CheckMK 2.4
+    parser_add_secret_option = None
+    resolve_secret_option = None
+
 
 # ============================================================================
 # LOGGING
@@ -350,11 +359,14 @@ def parse_arguments() -> argparse.Namespace:
         required=True,
         help="API username"
     )
-    parser.add_argument(
-        "--password",
-        required=True,
-        help="API password"
-    )
+    if parser_add_secret_option is not None:
+        # Creates "--password" (plaintext, debugging) and "--password-id" (store
+        # reference, what the server_side_calls plugin passes on 2.5)
+        parser_add_secret_option(
+            parser, long="--password", help="API password", required=True
+        )
+    else:  # CheckMK 2.4: SSC passes params["password"].unsafe()
+        parser.add_argument("--password", required=True, help="API password")
     parser.add_argument(
         "--timeout",
         type=int,
@@ -392,7 +404,11 @@ def main():
             hostname=args.hostname,
             port=args.port,
             username=args.username,
-            password=args.password,
+            password=(
+                resolve_secret_option(args, "password").reveal()
+                if resolve_secret_option is not None
+                else args.password
+            ),
             verify_ssl=not args.no_cert_check,
             timeout=args.timeout,
         )

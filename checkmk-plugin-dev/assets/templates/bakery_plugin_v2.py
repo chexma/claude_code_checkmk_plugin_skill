@@ -3,9 +3,10 @@
 # CheckMK Bakery Plugin Template — v2_unstable (CheckMK 2.5+)
 # =============================================================================
 #
-# UNSTABLE API: cmk.bakery.v2_unstable may change before it stabilizes
-# (planned for 2.6, per Werk #18600). For CheckMK 2.4, or for stable 2.5
-# production plugins, use bakery_plugin.py (v1) instead.
+# UNSTABLE API: cmk.bakery.v2_unstable may change; it is planned to become
+# stable in the next major release, 3.0.0 (Werk #18600, corrected by
+# Werk #19370). For CheckMK 2.4, or for stable 2.5 production plugins,
+# use bakery_plugin.py (v1) instead.
 #
 # This template creates a Bakery plugin for distributing agent plugins
 # via the Agent Bakery (commercial editions), using the new plugin family
@@ -15,7 +16,7 @@
 #   ~/local/lib/python3/cmk_addons/plugins/<family>/bakery/my_plugin.py
 #
 # Required companion files:
-#   1. Agent plugins in ~/local/lib/python3/cmk_addons/plugins/<family>/agent/
+#   1. Agent plugins in ~/local/lib/python3/cmk_addons/plugins/<family>/agents/
 #   2. AgentConfig ruleset in ~/local/lib/python3/cmk_addons/plugins/<family>/rulesets/
 #
 # =============================================================================
@@ -59,7 +60,7 @@ from cmk.bakery.v2_unstable import (
 # Plugin name - must match the AgentConfig ruleset name
 PLUGIN_NAME = "my_plugin"
 
-# Source filenames, relative to this family's agent/ directory
+# Source filenames, relative to this family's agents/ directory
 LINUX_PLUGIN = "my_plugin"
 WINDOWS_PLUGIN = "my_plugin.ps1"
 SOLARIS_PLUGIN = "my_plugin.solaris.ksh"
@@ -147,7 +148,7 @@ def get_plugin_files(conf: MyPluginConfig) -> FileGenerator:
     # -------------------------------------------------------------------------
     # yield SystemBinary(
     #     base_os=OS.LINUX,
-    #     source=Path("my_helper_tool"),  # From this family's agent/ directory
+    #     source=Path("my_helper_tool"),  # From this family's agents/ directory
     # )
 
     # -------------------------------------------------------------------------
@@ -179,9 +180,11 @@ def _generate_json_config(conf: MyPluginConfig) -> List[str]:
 # Package Scriptlets
 # =============================================================================
 
-def get_scriptlets(conf: MyPluginConfig, aghash: str = "") -> ScriptletGenerator:
+def get_scriptlets(conf: MyPluginConfig) -> ScriptletGenerator:
     """
     Generate package manager scriptlets (post-install, pre-remove, etc.).
+
+    v2 passes only the parsed config (positionally) - there is no aghash.
 
     Note: Do NOT end with 'exit 0' - CheckMK adds more commands after yours.
     """
@@ -202,7 +205,7 @@ def get_scriptlets(conf: MyPluginConfig, aghash: str = "") -> ScriptletGenerator
 # Windows Configuration
 # =============================================================================
 
-def get_windows_config(conf: MyPluginConfig, aghash: str = "") -> WindowsConfigGenerator:
+def get_windows_config(conf: MyPluginConfig) -> WindowsConfigGenerator:
     """Generate Windows agent YAML configuration entries."""
     yield WindowsConfigEntry(
         path=[WINDOWS_CONFIG_SECTION, "api_url"],
@@ -228,7 +231,11 @@ def get_windows_config(conf: MyPluginConfig, aghash: str = "") -> WindowsConfigG
 
 bakery_plugin_my_plugin = BakeryPlugin(
     name=PLUGIN_NAME,
+    # Upstream recommends a real parser, e.g. a pydantic model's .model_validate;
+    # no_op_parser passes the ruleset dict through unchanged.
     parameter_parser=no_op_parser,
+    # Required: None = only bake for hosts with a matching rule.
+    default_parameters=None,
     files_function=get_plugin_files,
     scriptlets_function=get_scriptlets,
     windows_config_function=get_windows_config,

@@ -7,7 +7,11 @@
 # via the Agent Bakery (commercial editions).
 #
 # Installation:
-#   ~/local/lib/check_mk/base/cee/plugins/bakery/my_plugin.py
+#   ~/local/lib/python3/cmk/base/cee/plugins/bakery/my_plugin.py
+#   (the old ~/local/lib/check_mk symlink was removed in 2.5, Werk #17969)
+#
+# Bakery API v1 is deprecated in CheckMK 3.0.0 and removed in 3.1.0
+# (Werk #18600, corrected by Werk #19370). It still works in 2.4 and 2.5.
 #
 # Required companion files:
 #   1. Agent plugins in ~/local/share/check_mk/agents/plugins/
@@ -161,7 +165,7 @@ def get_plugin_files(conf: MyPluginConfig) -> FileGenerator:
     #
     # yield SystemBinary(
     #     base_os=OS.LINUX,
-    #     source=Path("my_helper_tool"),  # From agents/ directory on site
+    #     source=Path("my_helper_tool"),  # From ~/local/share/check_mk/agents/
     # )
 
     # -------------------------------------------------------------------------

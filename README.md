@@ -27,7 +27,7 @@ Personal skills in:
 
 ## Skill Contents
 
-### Reference Documentation (23 files)
+### Reference Documentation (24 files)
 
 | File | Description |
 |------|-------------|
@@ -51,6 +51,7 @@ Personal skills in:
 | `mkp_packaging.md` | Extension packaging |
 | `migration_guide.md` | Migrating legacy plugins to current APIs |
 | `best_practices.md` | Testing, debugging, migration |
+| `dcd_connector_api.md` | **2.5, commercial**: Dynamic Configuration Daemon connectors |
 | `rest_api.md` | CheckMK REST API client: v1 (stable) and unstable (2.5+) endpoints |
 
 ### Templates (22 files)

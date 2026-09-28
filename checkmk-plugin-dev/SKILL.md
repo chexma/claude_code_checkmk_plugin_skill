@@ -34,8 +34,9 @@ The core APIs (Check API V2, Rulesets API V1, Graphing API V1, Server-Side Calls
 | Reading stored secrets in server-side programs | — (use `Password` form spec + `.unsafe()`) | `references/password_store_api.md` (`v1_unstable`) |
 | Crash reports / call-to-call persistence for special agents | — | `references/server_side_programs_api.md` (`v1_unstable`) |
 | Custom HW/SW inventory tree visualizations | — | `references/inventory_ui_api.md` (`v1_unstable`) |
+| Automating CheckMK via REST API (dashboards, availability, relays, OTel, …) | `references/rest_api.md` → `v1` | `references/rest_api.md` → `unstable` endpoints |
 
-The three 2.5-only APIs are marked `unstable` upstream (stabilizes in 2.6, legacy removed in 2.7 per Werk #18600) — mention this to the user before recommending them for production use.
+The three 2.5-only APIs are marked `unstable` upstream (stabilizes in 2.6, legacy removed in 2.7 per Werk #18600) — mention this to the user before recommending them for production use. The same applies to REST API endpoints under `/api/unstable/`: they may change or disappear without notice.
 
 ## Choose Your Path
 
@@ -51,6 +52,7 @@ The three 2.5-only APIs are marked `unstable` upstream (stabilizes in 2.6, legac
 | Distribute plugins via Agent Bakery | `references/bakery_api.md` | `bakery_plugin.py` (v1) / `bakery_plugin_v2.py` (2.5 unstable) |
 | Package for distribution | `references/mkp_packaging.md` | - |
 | Migrate existing Nagios plugin | `references/migration_guide.md` | - |
+| Script CheckMK itself (REST API client) | `references/rest_api.md` | - |
 
 ## Core APIs
 
@@ -190,6 +192,7 @@ omd restart apache                             # After ruleset/graphing changes
 - `references/migration_guide.md` - Legacy plugin migration
 - `references/best_practices.md` - Testing, debugging, crash analysis
 - `references/checkman_manpages.md` - Man page format
+- `references/rest_api.md` - CheckMK REST API client: v1 vs **unstable** (2.5), auth, new endpoints
 
 ## Templates
 
@@ -244,4 +247,4 @@ Quick fixes:
 
 ## In-CheckMK Documentation
 
-Access via **Help > Developer resources** for Sphinx API docs, REST API ReDoc, and Swagger UI.
+Access via **Help > Developer resources** for Sphinx API docs, REST API ReDoc, and Swagger UI. REST API docs: `/check_mk/api/v1/doc/` (stable) and `/check_mk/api/unstable/doc/` (unstable) — see `references/rest_api.md`.

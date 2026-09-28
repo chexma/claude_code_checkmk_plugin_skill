@@ -10,7 +10,7 @@ Claude Code skill for CheckMK plugin development, covering **both 2.4 and 2.5**.
 
 The core plugin APIs (`cmk.agent_based.v2`, `cmk.rulesets.v1`, `cmk.graphing.v1`, `cmk.server_side_calls.v1`) are **identical** between CheckMK 2.4 and 2.5 — most reference files apply to both versions without changes.
 
-Two areas differ and are explicitly version-tagged:
+Three areas differ and are explicitly version-tagged:
 
 1. **Bakery API** (`references/bakery_api.md`) has two versions living side by side:
    - `cmk.base.plugins.bakery.bakery_api.v1` — stable, use for CheckMK 2.3–2.4 and for 2.5 unless you need the new features.
@@ -19,6 +19,7 @@ Two areas differ and are explicitly version-tagged:
    - `references/password_store_api.md` — `cmk.password_store.v1_unstable`
    - `references/server_side_programs_api.md` — `cmk.server_side_programs.v1_unstable`
    - `references/inventory_ui_api.md` — `cmk.inventory_ui.v1_unstable`
+3. **REST API** (`references/rest_api.md`): `/api/v1/` is stable; `/api/unstable/` is a superset with 50 extra 2.5 endpoints that may change without notice. Not a plugin API — client-side automation only.
 
 Migration timeline per Werk #18600: unstable in 2.5 → stabilized (renamed) in 2.6 → legacy APIs removed in 2.7. When writing new plugin code, ask which CheckMK version the user targets before choosing between stable v1 and unstable v2/new APIs — see `SKILL.md`'s version note.
 
@@ -27,7 +28,7 @@ Migration timeline per Werk #18600: unstable in 2.5 → stabilized (renamed) in 
 ```
 checkmk-plugin-dev/
 ├── SKILL.md              # Main skill entry point
-├── references/           # Detailed API documentation (22 files)
+├── references/           # Detailed API documentation (23 files)
 └── assets/templates/     # Ready-to-use plugin templates (22 files)
 ```
 

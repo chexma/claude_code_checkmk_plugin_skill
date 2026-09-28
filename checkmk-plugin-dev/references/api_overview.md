@@ -6,7 +6,7 @@ Unless noted otherwise, these are identical in 2.4 and 2.5:
 
 | API | Purpose | Location |
 |-----|---------|----------|
-| **REST API** | Full automation (hosts, rules, services, downtimes) | Help > Developer resources > REST API |
+| **REST API v1** | Full automation (hosts, rules, services, downtimes) — stable | `/check_mk/api/v1/`, see `rest_api.md` |
 | **Check API V2** | Agent-based & SNMP check plugins | `cmk.agent_based.v2` |
 | **Rulesets API V1** | Rule configuration forms | `cmk.rulesets.v1` |
 | **Graphing API V1** | Metrics, graphs, perfometers | `cmk.graphing.v1` |
@@ -24,6 +24,7 @@ Unless noted otherwise, these are identical in 2.4 and 2.5:
 | **Password Store API** | Read stored secrets in server-side programs | `cmk.password_store.v1_unstable` |
 | **Server-Side Programs API** | Crash reports, call-to-call persistence, TLS helpers | `cmk.server_side_programs.v1_unstable` |
 | **Inventory UI API** | Custom HW/SW inventory tree visualizations | `cmk.inventory_ui.v1_unstable` |
+| **REST API unstable** | v1 + 50 new endpoints (dashboards, availability, relays, OpenTelemetry, metric backend, inventory trees, …) | `/check_mk/api/unstable/`, see `rest_api.md` |
 
 ## In-Checkmk Resources
 
@@ -39,12 +40,14 @@ Access via **Help > Developer resources**:
 # Plugin API Reference (internal)
 https://<server>/<site>/check_mk/plugin-api/
 
-# REST API Documentation
-https://<server>/<site>/check_mk/api/1.0/ui/
+# REST API Documentation (ReDoc) — replace v1 with unstable for the unstable API
+https://<server>/<site>/check_mk/api/v1/doc/
 
-# REST API Interactive GUI  
-https://<server>/<site>/check_mk/api/1.0/ui/swagger-ui/
+# REST API Interactive GUI (Swagger UI)
+https://<server>/<site>/check_mk/api/v1/ui/
 ```
+
+The old `api/1.0/` spelling still works but is legacy. Details on versions, authentication and the unstable endpoints: `rest_api.md`.
 
 ## Plugin Development File Locations
 

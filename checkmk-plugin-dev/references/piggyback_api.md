@@ -175,7 +175,7 @@ Dynamic Configuration Daemon can create hosts automatically.
 # create_piggyback_hosts.py
 import requests
 
-CMK_URL = "http://mycmk/mysite/check_mk/api/1.0"
+CMK_URL = "http://mycmk/mysite/check_mk/api/v1"
 API_USER = "automation"
 API_SECRET = "secret"
 

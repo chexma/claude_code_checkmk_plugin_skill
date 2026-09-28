@@ -3,14 +3,13 @@
 ## Contents
 
 - [Available APIs (CheckMK 2.4 and 2.5)](#available-apis-checkmk-24-and-25)
-- [In-Checkmk Resources](#in-checkmk-resources)
+- [In-CheckMK Resources](#in-checkmk-resources)
 - [API Documentation URLs (in CheckMK)](#api-documentation-urls-in-checkmk)
 - [Plugin Development File Locations](#plugin-development-file-locations)
 - [API Import Cheat Sheet](#api-import-cheat-sheet)
 - [Variable Naming Prefixes and Development Workflow](#variable-naming-prefixes-and-development-workflow)
 - [External Resources](#external-resources)
 - [Livestatus Quick Reference](#livestatus-quick-reference)
-- [Local Checks (Simple Alternative)](#local-checks-simple-alternative)
 
 ## Available APIs (CheckMK 2.4 and 2.5)
 
@@ -26,9 +25,9 @@ Unless noted otherwise, these are identical in 2.4 and 2.5:
 | **Bakery API v1** | Agent bakery integration (stable, 2.3+ incl. 2.5) | `cmk.base.plugins.bakery.bakery_api.v1` |
 | **HW/SW Inventory API** | Hardware/Software inventory (collection) | `cmk.agent_based.v2` (`InventoryPlugin`) |
 | **Livestatus** | Real-time status queries | Unix socket / TCP |
-| **Local Checks** | Simple script-based checks | Agent output format |
+| **Local Checks** | Simple script-based checks | Agent output format, see `local_checks.md` |
 
-### New in CheckMK 2.5 (all unstable — see `SKILL.md` version note)
+### New in CheckMK 2.5 (all unstable — see `SKILL.md` → *Stability and timeline*)
 
 | API | Purpose | Location |
 |-----|---------|----------|
@@ -39,7 +38,7 @@ Unless noted otherwise, these are identical in 2.4 and 2.5:
 | **DCD Connector API** | Custom Dynamic Configuration Daemon connectors (commercial editions, unversioned) | `cmk.nonfree.pro.dcd.connector_api`, see `dcd_connector_api.md` |
 | **REST API unstable** | v1 + 50 new endpoints (dashboards, availability, relays, OpenTelemetry, metric backend, inventory trees, …) | `/check_mk/api/unstable/`, see `rest_api.md` |
 
-## In-Checkmk Resources
+## In-CheckMK Resources
 
 Access via **Help > Developer resources**:
 
@@ -50,17 +49,11 @@ Access via **Help > Developer resources**:
 ## API Documentation URLs (in CheckMK)
 
 ```
-# Plugin API Reference (internal)
+# Plugin API Reference (Sphinx)
 https://<server>/<site>/check_mk/plugin-api/
-
-# REST API Documentation (ReDoc) — replace v1 with unstable for the unstable API
-https://<server>/<site>/check_mk/api/v1/doc/
-
-# REST API Interactive GUI (Swagger UI)
-https://<server>/<site>/check_mk/api/v1/ui/
 ```
 
-The old `api/1.0/` spelling still works but is legacy. Details on versions, authentication and the unstable endpoints: `rest_api.md`.
+REST API documentation URLs (ReDoc, Swagger UI, raw spec) for `v1` and `unstable`: `rest_api.md` → *Documentation URLs*.
 
 ## Plugin Development File Locations
 
@@ -188,7 +181,3 @@ echo -e "GET services\nColumns: host_name description state\nFilter: state = 2" 
 ```
 
 Common tables: `hosts`, `services`, `hostgroups`, `servicegroups`, `contacts`, `downtimes`, `comments`, `log`
-
-## Local Checks (Simple Alternative)
-
-The local check output format and examples are in `local_checks.md`.

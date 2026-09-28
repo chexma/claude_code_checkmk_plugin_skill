@@ -21,16 +21,7 @@
 - Check existing names: `cmk -L | grep -i myprefix`
 
 ### Variable Naming (CRITICAL)
-Plugins are discovered by prefix:
-```python
-agent_section_mycheck = AgentSection(...)      # Starts with agent_section_
-snmp_section_mycheck = SimpleSNMPSection(...)  # Starts with snmp_section_
-check_plugin_mycheck = CheckPlugin(...)        # Starts with check_plugin_
-rule_spec_mycheck = CheckParameters(...)       # Starts with rule_spec_
-metric_mycheck = Metric(...)                   # Starts with metric_
-graph_mycheck = Graph(...)                     # Starts with graph_
-perfometer_mycheck = Perfometer(...)           # Starts with perfometer_
-```
+Plugins are discovered by variable name prefix only. The complete list (including `inventory_plugin_`, `translation_`, `special_agent_`, `active_check_`, `bakery_plugin_`, `node_`) is in `SKILL.md` → *Variable Naming*.
 
 ### File Organization
 ```
@@ -260,7 +251,7 @@ cmk -R
 ```
 
 ### Using Spool Files for Testing
-Create test data in `/var/lib/check_mk_agent/spool/`:
+Create test data in `/var/lib/check_mk_agent/spool/` (naming, max age and atomic writes: `spool_directory.md`):
 ```bash
 cat > /var/lib/check_mk_agent/spool/mycheck <<EOF
 <<<mycheck>>>
@@ -356,61 +347,8 @@ def discover_mycheck(section):
 
 ## Migration from API V1 to V2
 
-### Key Changes
-| V1 | V2 |
-|----|-----|
-| `register.agent_section()` | `AgentSection(...)` class |
-| `register.check_plugin()` | `CheckPlugin(...)` class |
-| `register.snmp_section()` | `SimpleSNMPSection(...)` or `SNMPSection(...)` |
-| `local/lib/python3/cmk/base/plugins/agent_based/` (formerly via the `local/lib/check_mk` symlink, removed in 2.5 — Werk #17969) | `local/lib/python3/cmk_addons/plugins/<family>/agent_based/` |
-| `from .agent_based_api.v1 import *` | `from cmk.agent_based.v2 import ...` |
-| `type_defs` module | Types in `cmk.agent_based.v2` |
-| `SNMPDetect` class | Detection functions (`startswith`, `contains`, etc.) |
-
-### Migration Steps
-1. Create new directory structure
-2. Update imports
-3. Convert registration to class instantiation
-4. Rename variables with correct prefixes
-5. Test thoroughly
-6. Remove old files
-
-### Migration Helper Scripts
-Available at: `github.com/Checkmk/checkmk/tree/master/doc/treasures/migration_helpers/`
+Mapping table (`register.*` → classes, old plugin paths), step-by-step procedure and the official migration helper scripts: `migration_guide.md`.
 
 ## Packaging as MKP
 
-```bash
-# List unpackaged files
-mkp find
-
-# Create package (mkp template prints to stdout)
-mkp template mycheck > ~/tmp/mycheck.manifest
-# Edit the manifest (remove unrelated files!)
-mkp package ~/tmp/mycheck.manifest
-
-# Install package
-mkp add mycheck-1.0.0.mkp
-
-# Enable package
-mkp enable mycheck 1.0.0
-```
-
-Manifest structure (a **Python literal**, not JSON — `None`, not `null`; all keys below are required except `version.usable_until`):
-```python
-{'author': 'Your Name',
- 'description': 'Description of the plugin',
- 'download_url': 'https://github.com/you/mycheck',
- 'files': {'agents': ['plugins/mycheck'],
-           'cmk_addons_plugins': ['mycheck/agent_based/mycheck.py',
-                                  'mycheck/graphing/mycheck.py',
-                                  'mycheck/rulesets/mycheck.py']},
- 'name': 'mycheck',
- 'title': 'My Check Plugin',
- 'version': '1.0.0',
- 'version.min_required': '2.4.0',
- 'version.packaged': '2.5.0p14',
- 'version.usable_until': None}
-```
-
-Leave `version.usable_until` at `None` unless you know the package breaks on a later version — `mkp disable-outdated` disables packages past that version on upgrade. See `mkp_packaging.md`.
+`mkp template <name> > file` → edit → `mkp package file`. Full workflow, manifest format (a Python literal with required `download_url` and `version.packaged`) and the `usable_until` pitfall: `mkp_packaging.md`.

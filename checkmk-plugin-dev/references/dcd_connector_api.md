@@ -1,6 +1,6 @@
 # Dynamic Configuration Connector API (DCD)
 
-> **CheckMK 2.5, commercial editions only (Pro/Ultimate/Cloud)** — not available in Community/Raw. Listed in the 2.5 Sphinx docs (*Help > Plug-in API references > Dynamic configuration connector*) as `cmk.nonfree.pro.dcd.connector_api`. It is **not versioned** (no `v1`) and carries no stability promise. Expect breaking changes between releases and tell the user before recommending it.
+> **CheckMK 2.5, commercial editions only (Pro/Ultimate/Cloud)** — not available in the Community edition (formerly Raw). Listed in the 2.5 Sphinx docs (*Help > Plug-in API references > Dynamic configuration connector*) as `cmk.nonfree.pro.dcd.connector_api`. It is **not versioned** (no `v1`) and carries no stability promise. Expect breaking changes between releases and tell the user before recommending it.
 
 ## Purpose
 
@@ -76,3 +76,5 @@ What a connector implements, based on that example:
 ## 2.4 → 2.5
 
 The commercial Python namespace changed from `cmk.cee.*` to `cmk.nonfree.pro.*` / `cmk.nonfree.ultimate.*` in 2.5. The top-level package `cmk.cee` no longer exists. Connectors written against 2.4 import paths must be updated.
+
+This does **not** affect the Bakery API v1 plugin location `cmk/base/cee/plugins/bakery/` (`cmk.base.cee…`). That is a different package, and 2.5 still loads it for compatibility (see `bakery_api.md`).

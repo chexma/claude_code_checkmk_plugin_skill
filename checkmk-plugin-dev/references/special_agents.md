@@ -207,7 +207,8 @@ def _agent_arguments(params, host_config):
     if "password" in params:
         # params["password"] is a Secret. .unsafe() returns another Secret that
         # CheckMK renders as plaintext in the argv (works on 2.4 and 2.5).
-        # On 2.5 prefer ["--password-id", params["password"]] - see below.
+        # 2.5 only (unstable API): ["--password-id", params["password"]] keeps it
+        # out of the process table - see below.
         args.extend(["--password", params["password"].unsafe()])
     
     if "timeout" in params:
@@ -674,7 +675,7 @@ cmk -vI --detect-plugins=myagent myhost --debug
 2. **Make executable**: `chmod 755`
 3. **Use site user** for file creation (not root)
 4. **Name consistency**: `agent_myagent` → `rule_spec_myagent` → `special_agent_myagent`
-5. **Password via store reference**: `--password-id` + `cmk.password_store.v1_unstable` on 2.5; `.unsafe()` only in `command_arguments` on 2.4 (never `stdin`/env)
+5. **Passwords only in `command_arguments`**: `.unsafe()` is the stable default (2.4 and 2.5). On 2.5, `--password-id` + `cmk.password_store.v1_unstable` keeps the password out of the process table (unstable API). Never use `stdin` or env.
 6. **Always yield** `SpecialAgentCommand` (even with empty args)
 7. **String conversion**: All command arguments must be strings
 8. **Error handling**: Write errors to stderr, exit with non-zero code

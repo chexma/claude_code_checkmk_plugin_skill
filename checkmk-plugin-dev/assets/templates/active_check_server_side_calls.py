@@ -105,12 +105,12 @@ def generate_myservice_commands(
     # Password handling (if your check needs authentication)
     # A Password form spec value always arrives as a Secret - never build one yourself.
     if "password" in params:
-        # CheckMK 2.5 (recommended): pass only the password-store reference.
-        # The executable receives "<id>:<store_file>" and resolves it with
+        # Default (stable, 2.4 and 2.5): pass the plaintext - visible in the process table!
+        args.extend(["--password", params["password"].unsafe()])
+        # CheckMK 2.5 only (unstable password store API, tell the user): pass only the
+        # store reference. The executable receives "<id>:<store_file>" and resolves it with
         # cmk.password_store.v1_unstable.resolve_secret_option (see active_check_executable.py).
-        args.extend(["--password-id", params["password"]])
-        # CheckMK 2.4 (also works on 2.5): pass the plaintext - visible in the process table!
-        # args.extend(["--password", params["password"].unsafe()])
+        # args.extend(["--password-id", params["password"]])
     
     # Service description
     # Can be static or dynamic based on configuration
@@ -222,12 +222,13 @@ For checks that need passwords or API keys:
 2. In server_side_calls, params["password"] is already a Secret. Put it into
    command_arguments (never into stdin or os.environ - both only accept str):
 
-    # CheckMK 2.5 (recommended): the argv element becomes "<id>:<store_file>"
-    args.extend(["--password-id", params["password"]])
-
-    # CheckMK 2.4 (also works on 2.5): the argv element becomes the plaintext
+    # Default (stable, 2.4 and 2.5): the argv element becomes the plaintext
     args.extend(["--password", params["password"].unsafe()])
     # optional template: params["password"].unsafe("user:%s")
+
+    # CheckMK 2.5 only (unstable API): the argv element becomes "<id>:<store_file>";
+    # keeps the password out of the process table
+    args.extend(["--password-id", params["password"]])
 
 3. In the executable (2.5), resolve it with the unstable password store API:
 

@@ -180,7 +180,7 @@ Piggyback hosts must exist in CheckMK! Options:
 - Create hosts manually
 - Piggyback names must match exactly
 
-### 2. Automatic Creation via DCD (Enterprise)
+### 2. Automatic Creation via DCD (commercial editions)
 Dynamic Configuration Daemon can create hosts automatically.
 
 ### 3. Via API / Script

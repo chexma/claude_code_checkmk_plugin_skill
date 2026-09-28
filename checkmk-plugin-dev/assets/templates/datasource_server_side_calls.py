@@ -42,11 +42,12 @@ def _agent_arguments(params, host_config):
     if "password" in params:
         # params["password"] is a Secret (never a str). It only works inside
         # command_arguments - NOT in stdin= or os.environ (both need a str).
-        # CheckMK 2.5 (recommended): pass the password-store reference; the agent
-        # resolves it with cmk.password_store.v1_unstable.resolve_secret_option
-        args.extend(["--password-id", params["password"]])
-        # CheckMK 2.4 (also works on 2.5): plaintext on the command line
-        # args.extend(["--password", params["password"].unsafe()])
+        # Default (stable, 2.4 and 2.5): plaintext on the command line.
+        # Note: the password is visible in the process table of the site.
+        args.extend(["--password", params["password"].unsafe()])
+        # CheckMK 2.5 only (unstable password store API, tell the user): pass the
+        # store reference instead; the agent resolves it with resolve_secret_option.
+        # args.extend(["--password-id", params["password"]])
     
     # Optional parameters
     if "timeout" in params:

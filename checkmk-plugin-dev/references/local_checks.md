@@ -14,7 +14,7 @@ Local Checks are the simplest way to create custom services in CheckMK. The stat
 - [Multi-line Output](#multi-line-output)
 - [Asynchronous Execution (Caching)](#asynchronous-execution-caching)
 - [Complete Example: Backup Check](#complete-example-backup-check)
-- [Distribution via Agent Bakery (Enterprise)](#distribution-via-agent-bakery-enterprise)
+- [Distribution via Agent Bakery (commercial editions)](#distribution-via-agent-bakery-commercial-editions)
 - [Using Known Metrics](#using-known-metrics)
 - [Debugging](#debugging)
 - [Common Errors](#common-errors)
@@ -273,7 +273,7 @@ fi
 echo "${STATUS} \"Backup Status\" age=${AGE_HOURS};24;48|size=${SIZE_MB};${WARN_SIZE_MB}:;${CRIT_SIZE_MB}: ${MSG}"
 ```
 
-## Distribution via Agent Bakery (Enterprise)
+## Distribution via Agent Bakery (commercial editions)
 
 1. Create directory:
 ```bash

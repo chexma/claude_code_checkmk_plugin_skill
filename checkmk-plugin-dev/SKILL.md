@@ -11,7 +11,8 @@ description: >
   bakery plugin", "package an MKP", "write a local check", "script the
   CheckMK REST API", or mentions of cmk_addons, cmk.agent_based.v2 or
   cmk.server_side_calls. Do NOT use for manual GUI/Setup configuration,
-  site administration, or generic Nagios/Linux monitoring questions.
+  site administration via the GUI, or generic Nagios/Linux monitoring
+  questions.
 compatibility: Requires CheckMK 2.4+ environment. Claude Code recommended.
 metadata:
   author: andre
@@ -24,7 +25,7 @@ Scope: code that extends CheckMK (check plugins, rulesets, graphing, special age
 
 ## Which CheckMK Version?
 
-The core APIs (Check API V2, Rulesets API V1, Graphing API V1, Server-Side Calls V1) are **identical** in 2.4 and 2.5 — nearly all reference files and templates below work unchanged for either version. Only ask about the target version when the task touches one of these:
+The core APIs (Check API V2, Rulesets API V1, Graphing API V1, Server-Side Calls V1) are **identical** in 2.4 and 2.5 — all templates below work unchanged on both versions. Only ask about the target version when the task touches one of these:
 
 | Area | Stable (2.4 and 2.5) | 2.5+ only (unstable) |
 |---|---|---|
@@ -44,12 +45,12 @@ This is the one place for the timeline. Reference files only link here.
 - The legacy APIs they replace (bakery API v1, `cmk.special_agents.v0_unstable`, `cmk.utils.password_store`) are **deprecated in 3.0.0 and removed in 3.1.0**.
 - REST API endpoints under `/api/unstable/` may change or disappear at any time.
 
-**Tell the user before recommending any unstable API for production use.** This also applies to the special-agent and active-check templates, which use one by default:
+**Tell the user before recommending any unstable API for production use.**
 
-- The executables (`datasource_complete.py`, `active_check_executable.py`) use `cmk.password_store.v1_unstable` on 2.5 and fall back to a plain `--password` on 2.4.
-- The server-side-call templates (`datasource_server_side_calls.py`, `active_check_server_side_calls.py`) emit `--password-id` by default, which works on 2.5 only. For 2.4, switch to the commented `.unsafe()` line.
+Passwords in the special-agent and active-check templates:
 
-Say this when you hand the templates over.
+- **Stable by default.** The server-side-call templates (`datasource_server_side_calls.py`, `active_check_server_side_calls.py`) pass `--password` with `.unsafe()`. This works on 2.4 and 2.5, but the password is visible in the process table.
+- **Optional on 2.5.** Switch to the commented `--password-id` line to keep the password out of the process table. This uses the unstable `cmk.password_store.v1_unstable`, so say so. The executables (`datasource_complete.py`, `active_check_executable.py`) accept both options on 2.5 and fall back to `--password` only on 2.4.
 
 ## Choose Your Path
 
@@ -275,4 +276,4 @@ Quick fixes:
 
 ## In-CheckMK Documentation
 
-Access via **Help > Developer resources** for Sphinx API docs, REST API ReDoc, and Swagger UI. REST API docs: `/check_mk/api/v1/doc/` (stable) and `/check_mk/api/unstable/doc/` (unstable) — see `references/rest_api.md`.
+Access via **Help > Developer resources** for Sphinx plugin API docs (`/check_mk/plugin-api/`), REST API ReDoc and Swagger UI. REST API URLs: `references/rest_api.md`.

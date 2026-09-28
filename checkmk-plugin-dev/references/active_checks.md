@@ -287,11 +287,11 @@ def generate_mycheck_commands(
     
     # Password handling (if needed) - params["password"] is a Secret
     if "password" in params:
-        # 2.5 (recommended): executable receives "<id>:<store_file>" and resolves it
-        # with cmk.password_store.v1_unstable (see "Secrets in the Executable" below)
-        args.extend(["--password-id", params["password"]])
-        # 2.4 (also works on 2.5): plaintext in argv
-        # args.extend(["--password", params["password"].unsafe()])
+        # Default (stable, 2.4 and 2.5): plaintext in argv
+        args.extend(["--password", params["password"].unsafe()])
+        # 2.5 only (unstable API): executable receives "<id>:<store_file>" and resolves
+        # it with cmk.password_store.v1_unstable (see "Secrets in the Executable" below)
+        # args.extend(["--password-id", params["password"]])
     
     # Service description
     service_description = params.get("service_description", "My Service Check")

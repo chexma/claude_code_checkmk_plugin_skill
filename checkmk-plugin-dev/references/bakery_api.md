@@ -2,24 +2,30 @@
 
 The Bakery API (commercial editions) allows packaging agent plugins for automatic distribution via the Agent Bakery. It handles plugin files, configuration files, package scriptlets, and Windows YAML configuration.
 
-> **Note**: Since CheckMK 2.3.0, the Bakery API exists in all editions. On CheckMK Raw, the functionality is simply ignored.
+> **Note**: Only the commercial editions (Pro, Ultimate, Cloud) bake agents. Since 2.3.0 the Bakery API module can also be imported in the Community edition (formerly Raw), so an MKP containing a bakery plugin still loads there. It just has no effect.
 
 ## Contents
 
 - [Which Version?](#which-version)
 - [Version 1 (Stable — CheckMK 2.3+, also 2.5)](#version-1-stable--checkmk-23-also-25)
-- [Use Cases](#use-cases)
-- [Scope and Limitations](#scope-and-limitations)
-- [Directory Structure](#directory-structure)
-- [Complete Example](#complete-example)
-- [API Reference](#api-reference)
-- [File Locations](#file-locations)
-- [Minimal Example (Distribution Only)](#minimal-example-distribution-only)
-- [MKP Package Structure](#mkp-package-structure)
-- [Windows Configuration](#windows-configuration)
-- [Best Practices](#best-practices)
-- [Debugging](#debugging)
+  - [Use Cases](#use-cases)
+  - [Scope and Limitations](#scope-and-limitations)
+  - [Directory Structure](#directory-structure)
+  - [Complete Example](#complete-example)
+  - [API Reference](#api-reference)
+  - [File Locations](#file-locations)
+  - [Minimal Example (Distribution Only)](#minimal-example-distribution-only)
+  - [MKP Package Structure](#mkp-package-structure)
+  - [Windows Configuration](#windows-configuration)
+  - [Best Practices](#best-practices)
+  - [Debugging](#debugging)
 - [Version 2 (Unstable — CheckMK 2.5+)](#version-2-unstable--checkmk-25)
+  - [Key Differences from v1](#key-differences-from-v1)
+  - [Imports](#imports-1)
+  - [Minimal Example](#minimal-example)
+  - [Working with Secrets](#working-with-secrets)
+  - [File Locations (v2_unstable)](#file-locations-v2_unstable)
+  - [Migrating a v1 Plugin to v2_unstable](#migrating-a-v1-plugin-to-v2_unstable)
 - [Related Topics](#related-topics)
 
 ## Which Version?
@@ -48,7 +54,7 @@ Template: `assets/templates/bakery_plugin.py` (v1) / `assets/templates/bakery_pl
 
 ## Version 1 (Stable — CheckMK 2.3+, also 2.5)
 
-## Use Cases
+### Use Cases
 
 - Distribute agent plugins to specific hosts via rules
 - Generate configuration files for plugins
@@ -56,7 +62,7 @@ Template: `assets/templates/bakery_plugin.py` (v1) / `assets/templates/bakery_pl
 - Configure Windows agent YAML entries
 - Bundle everything in an MKP package
 
-## Scope and Limitations
+### Scope and Limitations
 
 **The Bakery API covers:**
 - Deploying plugin files to agent packages
@@ -69,7 +75,7 @@ Template: `assets/templates/bakery_plugin.py` (v1) / `assets/templates/bakery_pl
 - Writing the agent plugin scripts themselves
 - Other additional files that plugins may require
 
-## Directory Structure
+### Directory Structure
 
 ```
 ~/local/lib/python3/cmk/base/cee/plugins/bakery/
@@ -83,9 +89,9 @@ Template: `assets/templates/bakery_plugin.py` (v1) / `assets/templates/bakery_pl
 └── some_tool                   # SystemBinary source (agents/ root)
 ```
 
-## Complete Example
+### Complete Example
 
-### 1. Ruleset (Agent Configuration)
+#### 1. Ruleset (Agent Configuration)
 
 File: `~/local/lib/python3/cmk_addons/plugins/hello_world/rulesets/agent_config.py`
 
@@ -142,7 +148,7 @@ rule_spec_hello_world_bakery = AgentConfig(
 )
 ```
 
-### 2. Bakery Plugin
+#### 2. Bakery Plugin
 
 File: `~/local/lib/python3/cmk/base/cee/plugins/bakery/hello_world.py`
 
@@ -294,9 +300,9 @@ register.bakery_plugin(
 )
 ```
 
-## API Reference
+### API Reference
 
-### Imports
+#### Imports
 
 ```python
 from .bakery_api.v1 import (
@@ -334,7 +340,7 @@ from .bakery_api.v1 import (
 )
 ```
 
-### Operating Systems
+#### Operating Systems
 
 ```python
 OS.LINUX    # Linux target system
@@ -343,9 +349,9 @@ OS.SOLARIS  # Solaris target system
 OS.AIX      # AIX target system
 ```
 
-### Artifact Classes
+#### Artifact Classes
 
-#### Plugin
+##### Plugin
 
 Agent plugin file to be executed by the CheckMK agent:
 
@@ -382,7 +388,7 @@ yield Plugin(
 > # → Full path: ~/local/share/check_mk/agents/windows/plugins/my_plugin.ps1
 > ```
 
-#### PluginConfig
+##### PluginConfig
 
 Configuration file generated for the plugin. Placed in the agent's config directory (default `/etc/check_mk`):
 
@@ -402,7 +408,7 @@ yield PluginConfig(
 | `target` | `Path` | Path relative to agent's config directory (usually just filename) |
 | `include_header` | `bool` | If True, prepends "# Created by Check_MK Agent Bakery..." header |
 
-#### SystemConfig
+##### SystemConfig
 
 Configuration file for the target system (placed under `/etc`). Unix only:
 
@@ -424,7 +430,7 @@ yield SystemConfig(
 
 Use this for deploying systemd service files, config files to service `.d` directories, etc.
 
-#### SystemBinary
+##### SystemBinary
 
 Additional executable placed in system path (`/usr/bin` on Unix, `bin/` folder on Windows):
 
@@ -442,7 +448,7 @@ yield SystemBinary(
 | `source` | `Path` | Path relative to `~/local/share/check_mk/agents/` (not `agents/custom/` — that folder belongs to the "custom files" agent rule) |
 | `target` | `Path \| None` | Target path relative to binary directory. If omitted, uses source path |
 
-#### Scriptlet
+##### Scriptlet
 
 Package manager hook scripts (DEB maintainer scripts, RPM scriptlets, Solaris installation scripts):
 
@@ -482,7 +488,7 @@ Available steps:
 | | `PREREMOVE` | Right before package uninstallation |
 | | `POSTREMOVE` | After package uninstallation |
 
-#### WindowsConfigEntry
+##### WindowsConfigEntry
 
 Entry in Windows agent YAML configuration (`check_mk.install.yml`):
 
@@ -501,7 +507,7 @@ yield WindowsConfigEntry(
 | `path` | `list[str]` | Path in YAML structure: `["section", "name"]` or `["section", "subsection", "name"]` (2-3 elements) |
 | `content` | `int \| str \| bool \| dict \| list` | Value for the entry (must be YAML-serializable) |
 
-#### WindowsConfigItems
+##### WindowsConfigItems
 
 List of items that will be **merged** with existing lists (unlike `WindowsConfigEntry` which overwrites):
 
@@ -518,7 +524,7 @@ yield WindowsConfigItems(
 | `path` | `list[str]` | Path in YAML structure (2-3 elements) |
 | `content` | `list[...]` | List of items to merge (same types as WindowsConfigEntry content) |
 
-#### WindowsGlobalConfigEntry
+##### WindowsGlobalConfigEntry
 
 Shortcut for entries in the `global` section:
 
@@ -527,7 +533,7 @@ Shortcut for entries in the `global` section:
 yield WindowsGlobalConfigEntry(name="enabled", content=True)
 ```
 
-#### WindowsSystemConfigEntry
+##### WindowsSystemConfigEntry
 
 Shortcut for entries in the `system` section:
 
@@ -536,7 +542,7 @@ Shortcut for entries in the `system` section:
 yield WindowsSystemConfigEntry(name="controller", content="localhost")
 ```
 
-### Registration
+#### Registration
 
 ```python
 register.bakery_plugin(
@@ -554,7 +560,7 @@ register.bakery_plugin(
 | `scriptlets_function` | `Callable[..., ScriptletGenerator] \| None` | Generator yielding `Scriptlet`. Receives `conf` and `aghash` keyword arguments |
 | `windows_config_function` | `Callable[..., WindowsConfigGenerator] \| None` | Generator yielding Windows config entries. Receives `conf` and `aghash` keyword arguments |
 
-### Function Parameters (v1)
+#### Function Parameters (v1)
 
 In v1, the generator functions receive keyword arguments based on their parameter names:
 
@@ -582,7 +588,7 @@ def get_windows_config(conf: dict, aghash: str) -> WindowsConfigGenerator:
 
 Arguments are **keyword-only** - the function parameter names must match exactly (`conf`, `aghash`). Unused arguments can be omitted from the function signature.
 
-## File Locations
+### File Locations
 
 | Path | Description |
 |------|-------------|
@@ -593,7 +599,7 @@ Arguments are **keyword-only** - the function parameter names must match exactly
 | `~/local/share/check_mk/agents/windows/` | Additional binaries (Windows) |
 | `~/local/lib/python3/cmk_addons/plugins/<name>/rulesets/` | Ruleset for AgentConfig |
 
-## Minimal Example (Distribution Only)
+### Minimal Example (Distribution Only)
 
 If you just want to distribute a plugin without configuration:
 
@@ -637,7 +643,7 @@ register.bakery_plugin(
 )
 ```
 
-## MKP Package Structure
+### MKP Package Structure
 
 When packaging a Bakery plugin as MKP:
 
@@ -657,7 +663,7 @@ my_plugin-1.0.0.mkp
         └── agent_config.py    # AgentConfig ruleset
 ```
 
-## Windows Configuration
+### Windows Configuration
 
 The Windows agent reads configuration from `C:\ProgramData\checkmk\agent\check_mk.yml`. Entries added via `WindowsConfigEntry` appear there:
 
@@ -679,7 +685,7 @@ $config = Get-Content $configPath | ConvertFrom-Yaml
 $user = $config.hello_world.user
 ```
 
-## Best Practices
+### Best Practices
 
 1. **Name consistency**: Bakery plugin name must match AgentConfig ruleset name
 2. **No exit 0**: Don't end scriptlets with `exit 0` - CheckMK adds more commands
@@ -688,7 +694,7 @@ $user = $config.hello_world.user
 5. **Test baking**: After changes, bake a new agent and verify content
 6. **Interval as int**: Convert `interval` from float to int for Plugin class
 
-### Deprecation Note: quote_shell_string
+#### Deprecation Note: quote_shell_string
 
 `quote_shell_string()` is **deprecated** and is just an alias for `shlex.quote`. While it remains available in Bakery API v1, use `shlex.quote` for new code:
 
@@ -702,7 +708,7 @@ def _get_solaris_cfg_lines(user: str, content: str) -> list[str]:
     ]
 ```
 
-## Debugging
+### Debugging
 
 ```bash
 # Check bakery plugin syntax

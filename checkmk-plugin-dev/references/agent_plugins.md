@@ -13,7 +13,7 @@ Agent plugins are scripts that run **on the monitored host** and collect additio
 - [Caching and Intervals](#caching-and-intervals)
 - [Async Agent Plugins (Linux)](#async-agent-plugins-linux)
 - [Configurable Plugins](#configurable-plugins)
-- [Distribution via Agent Bakery (Enterprise)](#distribution-via-agent-bakery-enterprise)
+- [Distribution via Agent Bakery (commercial editions)](#distribution-via-agent-bakery-commercial-editions)
 - [Check Plugin for Agent Data](#check-plugin-for-agent-data)
 - [Debugging Agent Plugins](#debugging-agent-plugins)
 - [Best Practices](#best-practices)
@@ -431,7 +431,7 @@ threshold_warn = 80
 threshold_crit = 95
 ```
 
-## Distribution via Agent Bakery (Enterprise)
+## Distribution via Agent Bakery (commercial editions)
 
 ### Bakery Rule (Server-side)
 
@@ -487,7 +487,7 @@ rule_spec_agent_config_myapp = AgentConfig(
 )
 ```
 
-### Bakery Plugin (Enterprise)
+### Bakery Plugin (commercial editions)
 
 | API | Location | Status |
 |-----|----------|--------|

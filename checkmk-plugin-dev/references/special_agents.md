@@ -396,6 +396,70 @@ session.get(url, verify=False)
 session.post(url, data, verify=False)
 ```
 
+### Why This Happens: `requests` Silently Substitutes an Environment CA Bundle
+
+The GOTCHA above isn't a `requests` bug — it's documented behavior that's
+easy to trip over. `Session.request()` merges the per-call `verify` kwarg
+with `session.verify` via `merge_environment_settings()` /
+`merge_setting()`. The relevant logic (`requests/sessions.py`):
+
+```python
+# Inside Session.merge_environment_settings(): only runs if the per-call
+# verify kwarg is still None (i.e. you didn't pass verify= to .get()/.post())
+if verify is True or verify is None:
+    verify = (
+        os.environ.get("REQUESTS_CA_BUNDLE")
+        or os.environ.get("CURL_CA_BUNDLE")
+        or verify
+    )
+# Then: verify = merge_setting(verify, self.verify)
+# merge_setting() only falls back to session_setting when request_setting
+# is None -- but by now `verify` is a CA bundle *path string*, not None,
+# so it wins over session.verify=False.
+```
+
+**On every Checkmk OMD site, `REQUESTS_CA_BUNDLE` is set** (check with `env
+| grep CA_BUNDLE` as the site user — it points at
+`~/var/ssl/ca-certificates.crt`). So on a real Checkmk site this isn't a
+rare edge case: any special agent that sets `session.verify = False` but
+calls `session.get(url)` without `verify=` will have that `False` silently
+replaced by the site's CA bundle, and the request will fail against any
+server whose certificate that bundle doesn't know about (self-signed certs,
+private CAs, etc.) — with a `[SSL: CERTIFICATE_VERIFY_FAILED] certificate
+verify failed: unable to get local issuer certificate` error that looks
+identical to "verification is still on" but for a different reason.
+
+### Testing This Doesn't Catch The Bug By Default
+
+A unit test that mocks the whole `session` object (e.g.
+`client.session = MagicMock()`) will **not** catch this — it bypasses
+`requests`' real request-merging logic entirely, so `session.get.call_args`
+can look completely correct while the underlying substitution bug is still
+present in the actual code path.
+
+To actually exercise the real merge logic, use `requests_mock` (patches at
+the transport-adapter level, so `Session.request()` and
+`merge_environment_settings()` really run) and set `REQUESTS_CA_BUNDLE` via
+`monkeypatch.setenv` to a bogus path:
+
+```python
+import requests_mock
+
+def test_verify_false_is_honored_even_with_ca_bundle_env_set(monkeypatch):
+    monkeypatch.setenv("REQUESTS_CA_BUNDLE", "/nonexistent/ca-bundle.pem")
+    client = APIClient(hostname="example.invalid", verify_ssl=False)
+    with requests_mock.Mocker() as m:
+        m.get("https://example.invalid/api/status", json={})
+        client.get("/api/status")
+    # If verify= wasn't passed explicitly on the request, this will be the
+    # bogus CA bundle path instead of False.
+    assert m.last_request.verify is False
+```
+
+Run this test *without* the `verify=self.verify_ssl` fix in `APIClient.get()`
+first to confirm it fails — that's what proves the test actually guards
+against the regression, not just checks a code shape.
+
 ### Suppress urllib3 Warnings
 
 When disabling SSL verification, suppress the noisy warnings:

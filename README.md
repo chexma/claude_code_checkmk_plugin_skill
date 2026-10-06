@@ -16,6 +16,47 @@ When activated, this skill enables Claude Code to:
 
 ## Installation
 
+### As a Claude Code plugin (recommended)
+
+This repository is also a self-hosted Claude Code plugin marketplace. Add it
+once and install the plugin:
+
+```bash
+claude plugin marketplace add chexma/claude_code_checkmk_plugin_skill
+claude plugin install checkmk-plugin-dev@chexma-checkmk
+```
+
+Or inside a Claude Code session: `/plugin marketplace add chexma/claude_code_checkmk_plugin_skill`,
+then pick `checkmk-plugin-dev` in `/plugin`.
+
+Update to the latest version with:
+
+```bash
+claude plugin marketplace update chexma-checkmk
+claude plugin update checkmk-plugin-dev@chexma-checkmk
+```
+
+To get updates automatically, enable auto-update for the `chexma-checkmk`
+marketplace in `/plugin` (it is off by default for third-party marketplaces).
+
+To preinstall it for everyone working on a project (e.g. in a devcontainer
+template), add this to the project's `.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "chexma-checkmk": {
+      "source": { "source": "github", "repo": "chexma/claude_code_checkmk_plugin_skill" }
+    }
+  },
+  "enabledPlugins": {
+    "checkmk-plugin-dev@chexma-checkmk": true
+  }
+}
+```
+
+### As a plain skill
+
 Copy or git clone the `checkmk-plugin-dev/` directory to your Claude Code skills location.
 
 Personal skills in:

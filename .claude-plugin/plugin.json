@@ -1,0 +1,12 @@
+{
+  "name": "checkmk-plugin-dev",
+  "version": "1.0.0",
+  "description": "API references, templates and best practices for developing CheckMK 2.4 and 2.5 extensions: agent-based and SNMP checks, special agents, active checks, rulesets, graphing, inventory, Agent Bakery plugins and MKP packages.",
+  "author": {
+    "name": "Andre Eckstein"
+  },
+  "homepage": "https://github.com/chexma/claude_code_checkmk_plugin_skill",
+  "repository": "https://github.com/chexma/claude_code_checkmk_plugin_skill",
+  "keywords": ["checkmk", "monitoring", "plugin-development"],
+  "skills": ["./checkmk-plugin-dev"]
+}

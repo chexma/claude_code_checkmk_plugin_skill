@@ -1,0 +1,16 @@
+{
+  "name": "chexma-checkmk",
+  "owner": {
+    "name": "Andre Eckstein"
+  },
+  "metadata": {
+    "description": "Claude Code plugins for CheckMK extension development."
+  },
+  "plugins": [
+    {
+      "name": "checkmk-plugin-dev",
+      "source": "./",
+      "description": "API references, templates and best practices for developing CheckMK 2.4 and 2.5 extensions."
+    }
+  ]
+}

@@ -27,11 +27,24 @@ Migration timeline per Werk #18600, corrected by Werk #19370 (2.5.0p11 — the n
 ## Structure
 
 ```
+.claude-plugin/
+├── marketplace.json      # Self-hosted marketplace "chexma-checkmk" (lists this repo as plugin)
+└── plugin.json           # Plugin manifest; "skills" points at ./checkmk-plugin-dev
 checkmk-plugin-dev/
 ├── SKILL.md              # Main skill entry point
 ├── references/           # Detailed API documentation (24 files)
 └── assets/templates/     # Ready-to-use plugin templates (21 files)
 ```
+
+The repo is both a plain skill (copy `checkmk-plugin-dev/`) and a Claude Code
+plugin marketplace. Keep `checkmk-plugin-dev/` at the repo root — the plain
+skill install path and `plugin.json`'s `skills` entry both depend on it.
+
+**Releasing:** bump `version` in `.claude-plugin/plugin.json` with every
+change that should reach users — installed plugins are tracked by that
+version, so an unchanged version means `claude plugin update` sees nothing
+new. Then validate with `claude plugin validate .` and optionally tag with
+`claude plugin tag`.
 
 ## Key Files
 

@@ -15,7 +15,7 @@ Three areas differ and are explicitly version-tagged:
 1. **Bakery API** (`references/bakery_api.md`) has two versions living side by side:
    - `cmk.base.plugins.bakery.bakery_api.v1` — stable, use for CheckMK 2.3–2.4 and for 2.5 unless you need the new features.
    - `cmk.bakery.v2_unstable` — CheckMK 2.5+, new plugin family layout, `BakeryPlugin` class instead of `register.bakery_plugin()`, `Secret` objects instead of raw password-store access. Marked unstable until it stabilizes in 3.0.0.
-2. **Three brand-new 2.5-only unstable APIs** with no 2.4 equivalent — each has its own reference file, clearly marked "2.5+, unstable":
+2. **Four brand-new 2.5-only APIs** with no 2.4 equivalent — each has its own reference file, clearly marked "2.5+, unstable":
    - `references/password_store_api.md` — `cmk.password_store.v1_unstable`
    - `references/server_side_programs_api.md` — `cmk.server_side_programs.v1_unstable`
    - `references/inventory_ui_api.md` — `cmk.inventory_ui.v1_unstable`
@@ -36,15 +36,60 @@ checkmk-plugin-dev/
 └── assets/templates/     # Ready-to-use plugin templates (21 files)
 ```
 
-The repo is both a plain skill (copy `checkmk-plugin-dev/`) and a Claude Code
-plugin marketplace. Keep `checkmk-plugin-dev/` at the repo root — the plain
-skill install path and `plugin.json`'s `skills` entry both depend on it.
+## Distribution (Plugin Marketplace)
 
-**Releasing:** bump `version` in `.claude-plugin/plugin.json` with every
-change that should reach users — installed plugins are tracked by that
-version, so an unchanged version means `claude plugin update` sees nothing
-new. Then validate with `claude plugin validate .` and optionally tag with
-`claude plugin tag`.
+The repo is both a plain skill (copy `checkmk-plugin-dev/`) and a self-hosted
+Claude Code plugin marketplace on GitHub (not the official Anthropic directory).
+Users install it with:
+
+```bash
+claude plugin marketplace add chexma/claude_code_checkmk_plugin_skill
+claude plugin install checkmk-plugin-dev@chexma-checkmk
+```
+
+Fixed decisions — do not change without a strong reason:
+
+- **Keep `checkmk-plugin-dev/` at the repo root.** Don't move it to `skills/`.
+  `plugin.json` points at it via `"skills": ["./checkmk-plugin-dev"]`, and
+  manual copies and existing clone scripts depend on that path.
+- **Marketplace name `chexma-checkmk`, plugin ID `checkmk-plugin-dev@chexma-checkmk`.**
+  Renaming forces every user to re-add the marketplace and breaks
+  `enabledPlugins` entries in project `.claude/settings.json` files (e.g. the
+  CheckMK devcontainer template, which installs the plugin this way).
+- **No email addresses in `plugin.json` / `marketplace.json`.** Name only.
+- **No `.skill` ZIP bundle.** The old `checkmk-plugin-dev.skill` was removed;
+  the plugin and the plain folder copy are the only install paths.
+
+## Releasing
+
+Installed plugins are tracked by `version` in `.claude-plugin/plugin.json`.
+If it stays the same, `claude plugin update` finds nothing new — so bump it
+with **every** commit that should reach users (content changes in
+`checkmk-plugin-dev/` included; repo-only changes like this file don't need it).
+Releases are tagged from 1.0.1 on (1.0.0 is intentionally untagged).
+
+```bash
+git pull --ff-only                          # repo is edited from several machines/devcontainers
+# 1. bump "version" in .claude-plugin/plugin.json (semver: patch for doc fixes)
+claude plugin validate .                    # expect "passed with warnings" (see below)
+claude --plugin-dir . plugin details checkmk-plugin-dev   # must list "Skills (1) checkmk-plugin-dev"
+# 2. commit + push
+claude plugin tag --push .                  # creates + pushes tag checkmk-plugin-dev--v<version>
+```
+
+The only expected `validate` warning is "CLAUDE.md at the plugin root is not
+loaded as project context". That's fine: this file is guidance for working on
+the repo, not plugin content.
+
+To verify a release reached users, on any machine with the plugin installed:
+
+```bash
+claude plugin marketplace update chexma-checkmk
+claude plugin update checkmk-plugin-dev@chexma-checkmk   # "updated from X to Y"
+claude plugin list                                        # shows new version
+```
+
+Then restart Claude Code to load the new version.
 
 ## Key Files
 
@@ -53,6 +98,7 @@ new. Then validate with `claude plugin validate .` and optionally tag with
 - **references/rulesets_api.md**: Form specs, factory functions
 - **references/graphing_api.md**: Metrics, graphs, perfometers
 - **references/bakery_api.md**: Bakery v1 (stable) vs v2_unstable (2.5+) side by side
+- **references/special_agents.md**: Special agents, incl. the SSL gotcha: on OMD sites `REQUESTS_CA_BUNDLE` overrides `session.verify=False` unless `verify=` is passed per request; test with `requests_mock`, not a `MagicMock` session
 - **references/best_practices.md**: Testing, debugging, crash analysis
 
 ## Plugin Directory Structure
